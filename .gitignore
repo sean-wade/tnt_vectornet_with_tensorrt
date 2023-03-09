@@ -1,0 +1,15 @@
+**__pycache__**
+**build**
+**egg-info**
+**dist**
+data/
+*.pyc
+venv/
+*.idea/
+*.pkl
+*.zip
+*.bin
+.vscode/
+work_dirs/
+**.ipynb_checkpoints**
+
