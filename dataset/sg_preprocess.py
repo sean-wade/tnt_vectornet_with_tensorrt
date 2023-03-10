@@ -1,8 +1,8 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-10 20:33:38
+LastEditTime: 2023-03-10 22:05:52
 FilePath: /vectornet/dataset/sg_preprocess.py
-LastEditors: zhanghao2 zhanghao2@sg.cambricon.com
+LastEditors: zhanghao
 Description: 
     根据SG数据保存的 data_seq_{id}.pkl 数据进行转换，生成训练使用的 data_seq_{id}_features.pkl
     转换前的 pickle 格式如下:

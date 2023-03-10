@@ -2,7 +2,7 @@
 Author: zhanghao
 LastEditTime: 2023-03-10 20:43:31
 FilePath: /vectornet/tools/train_vectornet.py
-LastEditors: zhanghao2 zhanghao2@sg.cambricon.com
+LastEditors: zhanghao
 Description: 
 '''
 import os

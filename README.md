@@ -1,11 +1,3 @@
-<!--
- * @Author: zhanghao
- * @Date: 2023-03-08 14:32:01
- * @LastEditors: zhanghao
- * @LastEditTime: 2023-03-10 21:52:05
- * @FilePath: /vectornet/README.md
- * @Description: 
--->
 # Reimplement VectorNet on Custom dataset
 
 Paper: [VectorNet: Encoding HD Maps and Agent Dynamics from Vectorized Representation](https://arxiv.org/abs/2005.04259)
@@ -18,6 +10,7 @@ Contain follow features:
 - [x] remove torch-geometric requirements
 - [x] batchify the data and compute subgraph in pipeline
 - [x] better visualize the evaluation result
+- [x] use tensorboard to viz the loss & metric
 - [x] overfit the tiny sample dataset
 - [x] simplify the inference pipeline for deploy
 - [ ] deploy through TensorRT or other framework
@@ -27,6 +20,9 @@ Contain follow features:
 
 ![](docs/viz.png) 
 
+
+## Tensorboard Viz
+![](docs/vectornet_metric.png) 
 
 ## Deploy
 
