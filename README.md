@@ -1,8 +1,8 @@
 <!--
  * @Author: zhanghao
  * @Date: 2023-03-08 14:32:01
- * @LastEditors: zhanghao2 zhanghao2@sg.cambricon.com
- * @LastEditTime: 2023-03-10 21:50:02
+ * @LastEditors: zhanghao
+ * @LastEditTime: 2023-03-10 21:52:05
  * @FilePath: /vectornet/README.md
  * @Description: 
 -->
@@ -10,7 +10,7 @@
 
 Paper: [VectorNet: Encoding HD Maps and Agent Dynamics from Vectorized Representation](https://arxiv.org/abs/2005.04259)
 
-Migrate from the [TNT implemention]()
+Migrate from the [TNT implemention](https://github.com/Henry1iu/TNT-Trajectory-Prediction)
 
 ## Features
 Contain follow features:

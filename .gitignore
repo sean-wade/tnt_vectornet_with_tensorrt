@@ -6,7 +6,6 @@ data/
 *.pyc
 venv/
 *.idea/
-*.pkl
 *.zip
 *.bin
 .vscode/
