@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-09 15:51:09
+LastEditTime: 2023-03-10 16:26:19
 FilePath: /vectornet/model/vectornet.py
 LastEditors: zhanghao
 Description: 
@@ -85,33 +85,48 @@ class VectorNet(nn.Module):
 
     def inference(self, data):
         batch_preds = self.forward(data)
-        batch_pred_traj = [pred.view(self.k, self.horizon, 2).cumsum(2) for pred in batch_preds]
+        batch_pred_traj = [pred.view(self.k, self.horizon, 2).cumsum(1) for pred in batch_preds]
         return batch_pred_traj
 
 
 if __name__ == "__main__":
-    from dataset.sg_dataloader import SGTrajDataset, collate_list
+    from dataset.sg_dataloader import SGTrajDataset, collate_list, collate_list_cuda
     from torch.utils.data import Dataset, DataLoader
 
     dataset = SGTrajDataset(data_root='/mnt/data/SGTrain/rosbag/train_feature', in_mem=True)
-    loader = DataLoader(dataset=dataset, batch_size=128, shuffle=True, collate_fn=collate_list)
+    loader = DataLoader(dataset=dataset, batch_size=128, shuffle=True, collate_fn=collate_list_cuda)
 
     device = torch.device('cuda:0')
     model = VectorNet(in_channels=6, device=device, with_aux=True)
+    model.to(device)
     # model.eval()
 
-    for data in loader:
-        print(data[0]["seq_id"], data[1]["seq_id"])
-        output = model(data)
-        # output = model.inference(data)
+    # def data_to_device(data, device):
+    #     for i, b_data in enumerate(data):
+    #         for k, v in data[i].items():
+    #             if torch.is_tensor(v):
+    #                 data[i][k] = data[i][k].to(device)
+    #     return data
 
-        # training
-        for pred in output['pred']:
-            print(pred.shape)
-        # for aux_out in output['aux_out']:
-        #     print(aux_out.shape)
+    import time
+    s = time.time()
+    for i in range(10):
+        for data in loader:
+            # data = data_to_device(data, device)
+            output = model(data)
+            # output = model.inference(data)
 
-        ## val
-        # for out in output:
-        #     print(out[0].shape)
-        # print("--------")
+            # training
+            # for pred in output['pred']:
+            #     print(pred.shape)
+            # for aux_out in output['aux_out']:
+            #     print(aux_out.shape)
+
+            ## val
+            # for out in output:
+            #     print(out[0].shape)
+            # print("--------")
+        print("epoch %d done..."%i)
+    e = time.time()
+    print("using %.2f s"%(e - s))
+    

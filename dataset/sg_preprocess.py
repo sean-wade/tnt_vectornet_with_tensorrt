@@ -1,8 +1,8 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-08 11:50:57
-FilePath: /TNT_Vectornet_SG/core/util/sg_preprocess.py
-LastEditors: zhanghao
+LastEditTime: 2023-03-10 20:33:38
+FilePath: /vectornet/dataset/sg_preprocess.py
+LastEditors: zhanghao2 zhanghao2@sg.cambricon.com
 Description: 
     根据SG数据保存的 data_seq_{id}.pkl 数据进行转换，生成训练使用的 data_seq_{id}_features.pkl
     转换前的 pickle 格式如下:
@@ -114,8 +114,8 @@ class SGPreprocessor:
             "candidate_gt" : torch.from_numpy(interm_data['gt_candts']).bool(),
             "offset_gt" : torch.from_numpy(interm_data['gt_tar_offset']).float(),
             "target_gt" : torch.from_numpy(interm_data['gt_preds'][0][-1, :]).float(),
-            "orig" : torch.from_numpy(interm_data['orig']).float().unsqueeze(0),
-            "rot" : torch.from_numpy(interm_data['rot']).float().unsqueeze(0),
+            "orig" : interm_data['orig'],
+            "rot" : interm_data['rot'],
             "traj_num" : interm_data['feats'].shape[0],
         }
         if len(interm_data['graph']['lane_idcs']) > 0:
@@ -476,8 +476,8 @@ class SGPreprocessor:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--root", type=str, default="/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data/")
-    parser.add_argument("-d", "--dest", type=str, default="/mnt/data/SGTrain/rosbag/train_feature/")
+    parser.add_argument("-r", "--root", type=str, default="../../TNT-SG/dataset/interm_data/val/raw_data_bag/")
+    parser.add_argument("-d", "--dest", type=str, default="/mnt/data/SGTrain/rosbag/medium/val/")
     parser.add_argument("-s", "--small", action='store_true', default=False)
     parser.add_argument("-v", "--viz",   action='store_true', default=False)
     args = parser.parse_args()

@@ -1,0 +1,121 @@
+VectorNet(
+  (backbone): VectorNetBackbone(
+    (subgraph): SubGraph(
+      (layer_seq): Sequential(
+        (glp_0): MLP(
+          (linear1): Linear(in_features=6, out_features=64, bias=True)
+          (linear2): Linear(in_features=64, out_features=64, bias=True)
+          (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (act1): ReLU(inplace=True)
+          (act2): ReLU(inplace=True)
+          (shortcut): Sequential(
+            (0): Linear(in_features=6, out_features=64, bias=True)
+            (1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          )
+        )
+        (glp_1): MLP(
+          (linear1): Linear(in_features=128, out_features=64, bias=True)
+          (linear2): Linear(in_features=64, out_features=64, bias=True)
+          (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (act1): ReLU(inplace=True)
+          (act2): ReLU(inplace=True)
+          (shortcut): Sequential(
+            (0): Linear(in_features=128, out_features=64, bias=True)
+            (1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          )
+        )
+        (glp_2): MLP(
+          (linear1): Linear(in_features=128, out_features=64, bias=True)
+          (linear2): Linear(in_features=64, out_features=64, bias=True)
+          (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          (act1): ReLU(inplace=True)
+          (act2): ReLU(inplace=True)
+          (shortcut): Sequential(
+            (0): Linear(in_features=128, out_features=64, bias=True)
+            (1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+          )
+        )
+      )
+      (linear): Linear(in_features=128, out_features=64, bias=True)
+    )
+    (global_graph): GlobalGraph(
+      (layers): Sequential(
+        (glp_0): SelfAttentionFCLayer(
+          (q_lin): Linear(in_features=66, out_features=64, bias=True)
+          (k_lin): Linear(in_features=66, out_features=64, bias=True)
+          (v_lin): Linear(in_features=66, out_features=64, bias=True)
+        )
+      )
+    )
+  )
+  (traj_pred_mlp): Sequential(
+    (0): MLP(
+      (linear1): Linear(in_features=64, out_features=64, bias=True)
+      (linear2): Linear(in_features=64, out_features=64, bias=True)
+      (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (act1): ReLU(inplace=True)
+      (act2): ReLU(inplace=True)
+    )
+    (1): Linear(in_features=64, out_features=60, bias=True)
+  )
+)
+
+
+backbone.subgraph.layer_seq.glp_0.linear1.weight
+backbone.subgraph.layer_seq.glp_0.linear1.bias
+backbone.subgraph.layer_seq.glp_0.linear2.weight
+backbone.subgraph.layer_seq.glp_0.linear2.bias
+backbone.subgraph.layer_seq.glp_0.norm1.weight
+backbone.subgraph.layer_seq.glp_0.norm1.bias
+backbone.subgraph.layer_seq.glp_0.norm2.weight
+backbone.subgraph.layer_seq.glp_0.norm2.bias
+backbone.subgraph.layer_seq.glp_0.shortcut.0.weight
+backbone.subgraph.layer_seq.glp_0.shortcut.0.bias
+backbone.subgraph.layer_seq.glp_0.shortcut.1.weight
+backbone.subgraph.layer_seq.glp_0.shortcut.1.bias
+backbone.subgraph.layer_seq.glp_1.linear1.weight
+backbone.subgraph.layer_seq.glp_1.linear1.bias
+backbone.subgraph.layer_seq.glp_1.linear2.weight
+backbone.subgraph.layer_seq.glp_1.linear2.bias
+backbone.subgraph.layer_seq.glp_1.norm1.weight
+backbone.subgraph.layer_seq.glp_1.norm1.bias
+backbone.subgraph.layer_seq.glp_1.norm2.weight
+backbone.subgraph.layer_seq.glp_1.norm2.bias
+backbone.subgraph.layer_seq.glp_1.shortcut.0.weight
+backbone.subgraph.layer_seq.glp_1.shortcut.0.bias
+backbone.subgraph.layer_seq.glp_1.shortcut.1.weight
+backbone.subgraph.layer_seq.glp_1.shortcut.1.bias
+backbone.subgraph.layer_seq.glp_2.linear1.weight
+backbone.subgraph.layer_seq.glp_2.linear1.bias
+backbone.subgraph.layer_seq.glp_2.linear2.weight
+backbone.subgraph.layer_seq.glp_2.linear2.bias
+backbone.subgraph.layer_seq.glp_2.norm1.weight
+backbone.subgraph.layer_seq.glp_2.norm1.bias
+backbone.subgraph.layer_seq.glp_2.norm2.weight
+backbone.subgraph.layer_seq.glp_2.norm2.bias
+backbone.subgraph.layer_seq.glp_2.shortcut.0.weight
+backbone.subgraph.layer_seq.glp_2.shortcut.0.bias
+backbone.subgraph.layer_seq.glp_2.shortcut.1.weight
+backbone.subgraph.layer_seq.glp_2.shortcut.1.bias
+backbone.subgraph.linear.weight
+backbone.subgraph.linear.bias
+backbone.global_graph.layers.glp_0.q_lin.weight
+backbone.global_graph.layers.glp_0.q_lin.bias
+backbone.global_graph.layers.glp_0.k_lin.weight
+backbone.global_graph.layers.glp_0.k_lin.bias
+backbone.global_graph.layers.glp_0.v_lin.weight
+backbone.global_graph.layers.glp_0.v_lin.bias
+traj_pred_mlp.0.linear1.weight
+traj_pred_mlp.0.linear1.bias
+traj_pred_mlp.0.linear2.weight
+traj_pred_mlp.0.linear2.bias
+traj_pred_mlp.0.norm1.weight
+traj_pred_mlp.0.norm1.bias
+traj_pred_mlp.0.norm2.weight
+traj_pred_mlp.0.norm2.bias
+traj_pred_mlp.1.weight
+traj_pred_mlp.1.bias

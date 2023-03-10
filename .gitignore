@@ -10,6 +10,6 @@ venv/
 *.zip
 *.bin
 .vscode/
-work_dirs/
+work_dir/
 **.ipynb_checkpoints**
 

@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-08 14:30:38
-FilePath: /TNT_Vectornet_SG/core/dataloader/sg_dataloader.py
+LastEditTime: 2023-03-09 19:14:44
+FilePath: /vectornet/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -17,20 +17,24 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 
-def collate_padding(samples):
-    traj_nums = np.array([d["traj_num"] for d in samples])
-    lane_nums = np.array([d["lane_num"] for d in samples])
-    valid_nums = traj_nums + lane_nums
-    num_valid_len_max = np.max(valid_nums)
-    candidate_nums = np.array([d["candidate"].shape[0] for d in samples])
-    num_candi_len_max = np.max(candidate_nums)
+# def collate_padding(samples):
+#     traj_nums = np.array([d["traj_num"] for d in samples])
+#     lane_nums = np.array([d["lane_num"] for d in samples])
+#     valid_nums = traj_nums + lane_nums
+#     num_valid_len_max = np.max(valid_nums)
+#     candidate_nums = np.array([d["candidate"].shape[0] for d in samples])
+#     num_candi_len_max = np.max(candidate_nums)
 
 
 def collate_list(samples):
-    # for sample in samples:
-    #     sample["x"] = torch.unsqueeze(sample["x"], 0)
-    #     sample["y"] = torch.unsqueeze(sample["y"], 0)
-    #     sample["cluster"] = torch.unsqueeze(sample["cluster"], 0).long()
+    return samples
+
+
+def collate_list_cuda(samples, device=torch.device('cuda:0')):
+    for i, b_data in enumerate(samples):
+        for k, v in samples[i].items():
+            if torch.is_tensor(v):
+                samples[i][k] = samples[i][k].to(device)
     return samples
 
 
@@ -41,7 +45,8 @@ class SGTrajDataset(Dataset):
         self.data_root = data_root
         self.in_mem = in_mem
         self.data_paths = sorted(glob.glob(data_root + "/*.pkl"))
-
+        self.num_features = 6
+        
         if self.in_mem:
             self.data = [self.extract_data(idx) for idx in tqdm(range(len(self)), desc="Loading data in memory")]
 

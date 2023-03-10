@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-03 14:00:22
-FilePath: /TNT-SG/core/util/vis_utils_v2.py
+LastEditTime: 2023-03-10 16:52:15
+FilePath: /vectornet/dataset/util/vis_utils_v2.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -13,35 +13,40 @@ from matplotlib import cm
 
 
 class Visualizer():
-    def __init__(self, xlim=80, ylim=80, candidate=False):
+    def __init__(self, xlim=80, ylim=80, candidate=False, convert_coordinate=False):
         self.xlim = xlim
         self.ylim = ylim
         self.candidate = candidate
+        self.convert_coordinate = convert_coordinate
 
 
     def draw_once(self, data, preds, gts=None, probs=None):
         _, ax = plt.subplots(figsize=(12, 12))
         ax.axis('equal')
         # plt.axis('off')
-        ax.set_title('seq_id: {}'.format(data.seq_id.numpy()[0]))
+        ax.set_title('seq_id: {}'.format(data["seq_id"]))
 
-        orig = data.orig.numpy()[0]
-        rot = data.rot.numpy()[0]
+        if self.convert_coordinate:
+            orig = data["orig"]
+            rot = data["rot"]
+        else:
+            orig = np.array([0,0])
+            rot = np.array([[1,0], [0,1]])
 
         # obs trajs
-        traj_len = int(data.traj_len[0])
-        for i in range(traj_len):
-            cur_traj = data.x[data.cluster==i][:, :2]
+        traj_num = int(data["traj_num"])
+        for i in range(traj_num):
+            cur_traj = data["x"][data["cluster"] == i][:, :2]
             cur_traj = np.matmul(np.linalg.inv(rot), cur_traj.T).T + orig.reshape(-1, 2)
             clr = "r" if i==0 else "gold"
             zorder = 20  if i==0 else 10
             ax.plot(cur_traj[:, 0], cur_traj[:, 1], marker='.', alpha=0.5, color=clr, zorder=zorder)
-            ax.plot(cur_traj[-1, 0], cur_traj[-1, 1], alpha=0.5, color=clr, marker='o', zorder=zorder, markersize=10)
+            ax.plot(cur_traj[-1, 0], cur_traj[-1, 1], alpha=0.5, color=clr, marker='o', zorder=5, markersize=15)
 
         # lane
-        lane_len = data.valid_len - data.traj_len
+        lane_len = int(data["lane_num"])
         for i in range(lane_len):
-            cur_lane = data.x[data.cluster==i+data.traj_len][:, :2]
+            cur_lane = data["x"][data["cluster"] == i + traj_num][:, :2]
             cur_lane = np.matmul(np.linalg.inv(rot), cur_lane.T).T + orig.reshape(-1, 2)
             ax.plot(cur_lane[:, 0], cur_lane[:, 1], marker='.', alpha=0.5, color="grey")
 
@@ -57,7 +62,7 @@ class Visualizer():
             c="coral", 
             alpha=0.9
         )
-        ax.plot(gts[-1, 0], gts[-1, 1], marker='o', color='coral', markersize=15, alpha=0.4, zorder=30, label="gt-final")
+        ax.plot(gts[-1, 0], gts[-1, 1], marker='o', color='coral', markersize=15, alpha=0.4, zorder=5, label="gt-final")
 
         # pred
         for pp, pred in enumerate(preds):
@@ -70,7 +75,7 @@ class Visualizer():
                 ax.text(pred[-1, 0], pred[-1, 1], '{:.3f}'.format(probs[pp]), zorder=15)
 
         if self.candidate:
-            candidate_pts = data.candidate
+            candidate_pts = data["candidate"]
             candidate_pts = np.matmul(np.linalg.inv(rot), candidate_pts.T).T + orig.reshape(-1, 2)
             ax.scatter(candidate_pts[:, 0], candidate_pts[:, 1], marker='.', color='deepskyblue', alpha=0.1)
 

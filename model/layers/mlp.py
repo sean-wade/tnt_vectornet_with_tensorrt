@@ -1,3 +1,10 @@
+'''
+Author: zhanghao
+LastEditTime: 2023-03-09 17:20:09
+FilePath: /vectornet/model/layers/mlp.py
+LastEditors: zhanghao
+Description: 
+'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

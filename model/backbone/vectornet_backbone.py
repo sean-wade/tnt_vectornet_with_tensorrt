@@ -65,7 +65,7 @@ class VectorNetBackbone(nn.Module):
             global_graph_out = self.global_graph(x, valid_lens=None)
 
             if self.training and self.with_aux:
-                aux_in = global_graph_out.view(-1, self.global_graph_width)[mask_polyline_indices]
+                aux_in = global_graph_out.view(-1, self.global_graph_width)[mask_polyline_indices].to(self.device)
                 aux_out = self.aux_mlp(aux_in)
                 batch_aux_out.append(aux_out)
 
