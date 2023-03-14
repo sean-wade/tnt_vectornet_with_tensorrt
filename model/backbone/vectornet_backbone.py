@@ -49,7 +49,7 @@ class VectorNetBackbone(nn.Module):
             data (Data): list(batch_data: dict)
         """
         batch_output, batch_aux_gt, batch_aux_out = [], [], []
-        for batch_idx, batch_data in enumerate(data):
+        for _, batch_data in enumerate(data):
             id_embedding = batch_data["identifier"]
             valid_len = batch_data["traj_num"] + batch_data["lane_num"]
 

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-09 17:20:49
+LastEditTime: 2023-03-13 11:20:48
 FilePath: /vectornet/model/layers/subgraph.py
 LastEditors: zhanghao
 Description: 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     out = layer(data, cluster)
     print(out.shape)
 
-    EXPORT = 0
+    EXPORT = 1
     if EXPORT:
         import onnx
         from onnxsim import simplify

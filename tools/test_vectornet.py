@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-10 20:55:08
+LastEditTime: 2023-03-13 10:00:14
 FilePath: /vectornet/tools/test_vectornet.py
 LastEditors: zhanghao
 Description: 
@@ -58,7 +58,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-r", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/mini", help="root dir for datasets")
+    parser.add_argument("-r", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/medium", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
