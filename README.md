@@ -4,7 +4,7 @@ Paper: [VectorNet: Encoding HD Maps and Agent Dynamics from Vectorized Represent
 
 Migrate from the [TNT implemention](https://github.com/Henry1iu/TNT-Trajectory-Prediction)
 
-## Features
+## I. Features
 
 Contain follow features:
 
@@ -18,37 +18,37 @@ Contain follow features:
 - [x] export onnx by replace scatter_max with fake_op
 - [ ] deploy through TensorRT or other framework
 
-## Train & Test
+## II. Train & Test
 
-1. Add python path
+### 1. Add python path
 
 ```
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 ```
 
-2. Train
+### 2. Train
 
 ```
 python tools/train_vectornet.py -d ./mini_data -b 128 --lr 0.005
 ```
 
-3. Test
+### 3. Test
 
 ```
 python tools/test_vectornet.py -d ./mini_data -b 128 -rm work_dir/best_VectorNet.pth
 ```
 
-## Viz prediction on my custom dataset.
+## III. Plot
 
 - Warning: My custom dataset does not have HDMap, so I only use the perception lane for input. This is only for experiment !!!
 
 ![](docs/viz.png)
 
-## Tensorboard Viz
+## IV.Tensorboard
 
 ![](docs/vectornet_metric.png)
 
-## Metric
+## V. Metric
 
 On my private dataset, the metrics are:
 
@@ -56,7 +56,36 @@ On my private dataset, the metrics are:
 {"minADE": 0.3962065457291247, "minFDE": 0.9303791035665404, "MR": 0.11696658097686376}
 ```
 
-## Deploy
+## VI. Deploy
 
-First, organize the inference computing pipeline as follows:
+### 1. Compute graph
+
+Organize the inference computing pipeline as follows:
 ![](docs/VectorNet计算图.png)
+
+### 2. Libtorch deploy
+
+a. Export jit traced module.
+
+```
+python tools/export/vectornet_export_v2.py
+```
+
+b. Compile cpp code.
+
+```
+cd tools/export/cpp_libtorch
+mkdir build && cd build
+cmake ..
+make
+```
+
+c. Excute
+
+```
+./vectornet ../../models/traced_vectornet.pt
+```
+
+- Attention: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
+
+### 3. TRT deploy

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-14 09:53:40
+LastEditTime: 2023-03-15 10:21:34
 FilePath: /vectornet/tools/export/vectornet_export_v2.py
 LastEditors: zhanghao
 Description: 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         traced_script_module = torch.jit.trace(model, (x, cluster, id_embedding, poly_num))
         out2 = traced_script_module(x, cluster, id_embedding, poly_num)
         print(gt[-1] - out2[-1])
-        traced_script_module.save("work_dir/traced_vectornet.pt")
+        traced_script_module.save("tools/export/models/traced_vectornet.pt")
 
     # ONNX_EXPORT = 1
     # if ONNX_EXPORT:

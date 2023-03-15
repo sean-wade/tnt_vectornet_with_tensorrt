@@ -10,10 +10,7 @@
 #include <memory>
 #include <iostream>
 #include <torch/script.h>
-// #include "sglog/sglog.h"
-// #include "sgtime/sgtime.h"
 
-// using namespace jarvis;
 int main(int argc, const char *argv[])
 {
     if (argc != 2)
@@ -49,13 +46,11 @@ int main(int argc, const char *argv[])
     torch_inputs.push_back(std::move(poly_num.to(device_)));
     at::Tensor torch_output_tensor_;
 
-    // SG_INFO("Inference start...");
     std::cout << "Start\n";
     for (int i = 0; i < 10000; i++)
     {
         torch_output_tensor_ = module.forward(torch_inputs).toTensor().to(device_);
     }
-    // SG_INFO("Inference done...");
     std::cout << torch_output_tensor_ << std::endl;
     std::cout << "OK\n";
 }
