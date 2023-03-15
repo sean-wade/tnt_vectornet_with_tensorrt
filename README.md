@@ -35,7 +35,7 @@ python tools/train_vectornet.py -d ./mini_data -b 128 --lr 0.005
 ### 3. Test
 
 ```
-python tools/test_vectornet.py -d ./mini_data -b 128 -rm work_dir/best_VectorNet.pth
+python tools/test_vectornet.py -d ./mini_data -b 128 -rm weights/sg_best_v1.pth
 ```
 
 ## III. Plot
