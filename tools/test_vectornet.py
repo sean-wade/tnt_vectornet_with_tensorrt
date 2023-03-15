@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-13 10:00:14
+LastEditTime: 2023-03-15 10:08:59
 FilePath: /vectornet/tools/test_vectornet.py
 LastEditors: zhanghao
 Description: 
@@ -58,7 +58,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-r", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/medium", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/medium", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
@@ -73,7 +73,7 @@ if __name__ == "__main__":
                         # default="best_VectorNet.pth",
                         help="resume a model state for fine-tune")
 
-    parser.add_argument("-d", "--save_dir", type=str, default="work_dir/test/"),
+    parser.add_argument("-sd", "--save_dir", type=str, default="work_dir/test/"),
     parser.add_argument("-sv", "--save_pred", action="store_true", default=True)
     parser.add_argument("--on_memory", type=bool, default=True, help="Loading on memory: true or false")
     args = parser.parse_args()

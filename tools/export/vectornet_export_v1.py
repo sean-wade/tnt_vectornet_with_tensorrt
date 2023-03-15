@@ -1,10 +1,10 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-14 14:18:02
+LastEditTime: 2023-03-15 10:04:55
 FilePath: /vectornet/tools/export/vectornet_export_v1.py
 LastEditors: zhanghao
 Description: 
-    FakeScatterMax: Fake implement, just for export onnx.
+    FakeScatterMax: Fake implement, just for export onnx. Cannot inference by onnxruntime, need implemention.
 '''
 import torch
 import pickle
@@ -28,6 +28,10 @@ class FakeScatterMax(torch.autograd.Function):
     @staticmethod
     def symbolic(g, src, index):
         return g.op("fake::ScatterMaxPlugin", src, index)
+
+
+from torch.onnx.symbolic_registry import register_op 
+register_op('ScatterMaxPlugin', FakeScatterMax, '', 11)
 
 
 class SubGraph(nn.Module):
@@ -161,10 +165,14 @@ if __name__ == "__main__":
         torch.onnx._export(
             model,
             (x, cluster, id_embedding),
-            "fake_vectornet.onnx",
+            "tools/export/models/fake_vectornet.onnx",
             input_names=["feat_tensor", "cluster", "id_embedding"],
             output_names=["pred"],
             dynamic_axes=None,
             opset_version=11,
         )
         print("export done.")
+
+        # import onnxruntime
+        # sess = onnxruntime.InferenceSession("tools/export/models/fake_vectornet.onnx", providers='TensorrtExecutionProvider') 
+        # ort_output = sess.run(None, {'0': x.numpy(), '1' : cluster.numpy(), '2' : id_embedding.numpy()})[0]
