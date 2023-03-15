@@ -40,7 +40,7 @@ python tools/test_vectornet.py -d ./mini_data -b 128 -rm work_dir/best_VectorNet
 
 ## III. Plot
 
-- Warning: My custom dataset does not have HDMap, so I only use the perception lane for input. This is only for experiment !!!
+> **ATTENTION**: My custom dataset does not have HDMap, so I only use the perception lane for input. This is only for experiment !!!
 
 ![](docs/viz.png)
 
@@ -86,6 +86,6 @@ c. Excute
 ./vectornet ../../models/traced_vectornet.pt
 ```
 
-- Attention: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
+> **ATTENTION**: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
 
 ### 3. TRT deploy
