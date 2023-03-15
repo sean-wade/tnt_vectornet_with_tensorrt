@@ -65,6 +65,8 @@ Organize the inference computing pipeline as follows:
 
 ### 2. Libtorch deploy
 
+> **ATTENTION**: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
+
 a. Export jit traced module.
 
 ```
@@ -85,7 +87,5 @@ c. Excute
 ```
 ./vectornet ../../models/traced_vectornet.pt
 ```
-
-> **ATTENTION**: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
 
 ### 3. TRT deploy
