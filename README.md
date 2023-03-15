@@ -23,19 +23,19 @@ Contain follow features:
 1. Add python path
 
 ```
-    export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 ```
 
 2. Train
 
 ```
-    python tools/train_vectornet.py -d ./mini_data -b 128 --lr 0.005
+python tools/train_vectornet.py -d ./mini_data -b 128 --lr 0.005
 ```
 
 3. Test
 
 ```
-    python tools/test_vectornet.py -d ./mini_data -b 128 -rm work_dir/best_VectorNet.pth
+python tools/test_vectornet.py -d ./mini_data -b 128 -rm work_dir/best_VectorNet.pth
 ```
 
 ## Viz prediction on my custom dataset.
@@ -47,6 +47,14 @@ Contain follow features:
 ## Tensorboard Viz
 
 ![](docs/vectornet_metric.png)
+
+## Metric
+
+On my private dataset, the metrics are:
+
+```
+{"minADE": 0.3962065457291247, "minFDE": 0.9303791035665404, "MR": 0.11696658097686376}
+```
 
 ## Deploy
 
