@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-15 10:21:34
+LastEditTime: 2023-03-15 15:54:01
 FilePath: /vectornet/tools/export/vectornet_export_v2.py
 LastEditors: zhanghao
 Description: 
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     gt = test_data["y"].reshape(30, 2).cumsum(0)
     # print(gt)
     print(gt[-1] - out[-1])
+    print("Inference done!!! \n\n\n")
 
     TRACE_JIT_EXPORT = 1
     if TRACE_JIT_EXPORT:
@@ -153,6 +154,7 @@ if __name__ == "__main__":
         out2 = traced_script_module(x, cluster, id_embedding, poly_num)
         print(gt[-1] - out2[-1])
         traced_script_module.save("tools/export/models/traced_vectornet.pt")
+        print("TRACE_JIT_EXPORT done!!! \n\n\n")
 
     # ONNX_EXPORT = 1
     # if ONNX_EXPORT:
@@ -188,7 +190,6 @@ if __name__ == "__main__":
 
 """
 Jit traced:
-
 RecursiveScriptModule(
   original_name=VectorNetExport
   (subgraph): RecursiveScriptModule(
@@ -266,11 +267,7 @@ RecursiveScriptModule(
     (1): RecursiveScriptModule(original_name=Linear)
   )
 )
-
-
-
 m.code
-
 def forward(self,
     x: Tensor,
     cluster: Tensor,
@@ -285,5 +282,4 @@ def forward(self,
   input0 = torch.select(_1, 1, 0)
   _2 = torch.view((traj_pred_mlp).forward(input0, ), [30, 2])
   return torch.cumsum(_2, 0)
-
 """

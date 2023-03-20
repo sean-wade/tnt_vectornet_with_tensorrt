@@ -4,9 +4,9 @@
  * @FilePath: /vectornet/tools/export/cpp/test.cpp
  * @LastEditors: zhanghao
  * @Description:
- *      目前可以 cpu libtorch 运行，速度大约 0.4 ms / forward.
+ *      目前可以 cpu libtorch 运行，速度大约 x ms / forward.
  */
-
+#include <time.h>
 #include <memory>
 #include <iostream>
 #include <torch/script.h>
@@ -31,11 +31,11 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    torch::Tensor x = torch::randn({10, 6});
-    float cc[] = {0, 0, 0, 0, 1, 1, 1, 1, 1, 1};
-    float pp[] = {2};
-    torch::Tensor cluster = torch::from_blob(cc, {10}).to(torch::kInt64);
-    torch::Tensor id_embedding = torch::randn({2, 2});
+    torch::Tensor x = torch::randn({500, 6});
+    // float cc[] = {0, 0, 0, 0, 1, 1, 1, 1, 1, 1};
+    float pp[] = {1};
+    torch::Tensor cluster = torch::zeros({500}).to(torch::kInt64);
+    torch::Tensor id_embedding = torch::randn({1, 2});
     torch::Tensor poly_num = torch::from_blob(pp, {1});
 
     auto device_ = torch::kCPU;
@@ -47,10 +47,16 @@ int main(int argc, const char *argv[])
     at::Tensor torch_output_tensor_;
 
     std::cout << "Start\n";
+    clock_t start, end;
+    start = clock();
+
     for (int i = 0; i < 10000; i++)
     {
         torch_output_tensor_ = module.forward(torch_inputs).toTensor().to(device_);
     }
     std::cout << torch_output_tensor_ << std::endl;
     std::cout << "OK\n";
+
+    end = clock();
+    std::cout << "运行时间: " << (double)(end - start) / CLOCKS_PER_SEC << std::endl;
 }

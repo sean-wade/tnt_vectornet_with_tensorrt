@@ -1,10 +1,14 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-15 11:37:21
-FilePath: /vectornet/tools/export/vectornet_export_v1.py
+LastEditTime: 2023-03-15 16:09:18
+FilePath: /vectornet/tools/export/vectornet_export_v3.py
 LastEditors: zhanghao
 Description: 
-    CustomScatterMax: Custom implement, just for export onnx. Cannot inference by onnxruntime, need implemention.
+    TRT 移植
+    问题：
+        1. 输入尺寸动态，如何实现？
+        2. scatter_max plugin 实现
+        3. layer norm plugin
 '''
 import torch
 import pickle
@@ -17,23 +21,16 @@ from model.layers.mlp import MLP
 from model.layers.global_graph import GlobalGraph
 
 
-class CustomScatterMax(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, src, index):
+class ScatterMax(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, src, index):
         # 调 unique 仅为了输出对应的维度信息
         index_unique = torch.unique(index)
         out = torch.zeros((index_unique.shape[0], src.shape[1]), dtype=torch.float32, device=src.device)
-        for idx in index_unique:
-            out[idx] = torch.max(src[index==idx], dim=0)[0]
+        
         return out
-
-    @staticmethod
-    def symbolic(g, src, index):
-        return g.op("Custom::ScatterMaxPlugin", src, index)
-
-
-# from torch.onnx.symbolic_registry import register_op 
-# register_op('ScatterMaxPlugin', CustomScatterMax, '', 11)
 
 
 class SubGraph(nn.Module):
@@ -55,11 +52,11 @@ class SubGraph(nn.Module):
         for name, layer in self.layer_seq.named_modules():
             if isinstance(layer, MLP):
                 x = layer(x)
-                x_max = CustomScatterMax.apply(x, cluster)
+                x_max = FakeScatterMax.apply(x, cluster)
                 x = torch.cat([x, x_max[cluster]], dim=-1)
 
         x = self.linear(x)
-        x = CustomScatterMax.apply(x, cluster)
+        x = FakeScatterMax.apply(x, cluster)
 
         return F.normalize(x, p=2.0, dim=1)  # L2 normalization
 
@@ -157,7 +154,6 @@ if __name__ == "__main__":
     gt = test_data["y"].reshape(30, 2).cumsum(0)
     # print(gt)
     print(gt[-1] - out[-1])
-    # [ 0.6829, -0.2413]
 
     ONNX_EXPORT = 1
     if ONNX_EXPORT:

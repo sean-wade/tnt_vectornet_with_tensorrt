@@ -1,10 +1,9 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-15 11:37:21
-FilePath: /vectornet/tools/export/vectornet_export_v1.py
+LastEditTime: 2023-03-16 15:34:35
+FilePath: /vectornet/assets/mlp.py
 LastEditors: zhanghao
 Description: 
-    CustomScatterMax: Custom implement, just for export onnx. Cannot inference by onnxruntime, need implemention.
 '''
 import torch
 import pickle
@@ -13,7 +12,6 @@ from tqdm import tqdm
 import torch.nn.functional as F
 
 from model.layers.mlp import MLP
-# from model.layers.subgraph import SubGraph
 from model.layers.global_graph import GlobalGraph
 
 
@@ -30,10 +28,6 @@ class CustomScatterMax(torch.autograd.Function):
     @staticmethod
     def symbolic(g, src, index):
         return g.op("Custom::ScatterMaxPlugin", src, index)
-
-
-# from torch.onnx.symbolic_registry import register_op 
-# register_op('ScatterMaxPlugin', CustomScatterMax, '', 11)
 
 
 class SubGraph(nn.Module):
@@ -139,43 +133,33 @@ if __name__ == "__main__":
     model.load_ckpt(ckpt)
     model.eval()
 
-    # x = torch.randn((200, 6))
-    # cluster = torch.cat((torch.zeros(50), torch.ones(70), torch.ones(40)*2, torch.ones(40)*3)).long()
-    # id_embedding = torch.randn((int(cluster.max())+1,2))
-    # print(id_embedding.shape)
+    mlp = model.subgraph.layer_seq[0]
+    print(mlp)
 
-    test_pkl = "tools/export/data_seq_40050_features.pkl"
-    test_data = pickle.load(open(test_pkl, "rb"))
-    x = test_data["x"]
-    cluster = test_data["cluster"].long()
-    id_embedding = test_data["identifier"]
+    inp1 = torch.randn((4, 6))
+    out1 = mlp(inp1)
+    
+    inp2 = torch.randn((10, 6))
+    out2 = mlp(inp2)
 
-    out = model(x, cluster, id_embedding)
-    print(out.shape)
-    # print(out)
+    # print(out1)
+    # print(out2)
+    import numpy as np
+    np.savetxt("/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/inp1.txt", inp1.cpu().detach().numpy())
+    np.savetxt("/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/out1.txt", out1.cpu().detach().numpy())
+    np.savetxt("/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/inp2.txt", inp2.cpu().detach().numpy())
+    np.savetxt("/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/out2.txt", out2.cpu().detach().numpy())
+    
+    import struct
+    wts_file = "/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/my_mlp.wts"
+    print(f'Writing into {wts_file}')
+    with open(wts_file, 'w') as f:
+        f.write('{}\n'.format(len(mlp.state_dict().keys())))
+        for k, v in mlp.state_dict().items():
+            vr = v.reshape(-1).cpu().numpy()
+            f.write('{} {} '.format(k, len(vr)))
+            for vv in vr:
+                f.write(' ')
+                f.write(struct.pack('>f', float(vv)).hex())
+            f.write('\n')
 
-    gt = test_data["y"].reshape(30, 2).cumsum(0)
-    # print(gt)
-    print(gt[-1] - out[-1])
-    # [ 0.6829, -0.2413]
-
-    ONNX_EXPORT = 1
-    if ONNX_EXPORT:
-        import onnx
-        from onnxsim import simplify
-
-        model.eval()
-        torch.onnx._export(
-            model,
-            (x, cluster, id_embedding),
-            "tools/export/models/fake_vectornet.onnx",
-            input_names=["feat_tensor", "cluster", "id_embedding"],
-            output_names=["pred"],
-            dynamic_axes=None,
-            opset_version=11,
-        )
-        print("export done.")
-
-        # import onnxruntime
-        # sess = onnxruntime.InferenceSession("tools/export/models/fake_vectornet.onnx", providers='TensorrtExecutionProvider') 
-        # ort_output = sess.run(None, {'0': x.numpy(), '1' : cluster.numpy(), '2' : id_embedding.numpy()})[0]
