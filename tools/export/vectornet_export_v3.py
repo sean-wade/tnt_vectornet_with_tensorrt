@@ -1,14 +1,12 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-15 16:09:18
+LastEditTime: 2023-03-21 16:18:52
 FilePath: /vectornet/tools/export/vectornet_export_v3.py
 LastEditors: zhanghao
 Description: 
-    TRT 移植
-    问题：
-        1. 输入尺寸动态，如何实现？
-        2. scatter_max plugin 实现
-        3. layer norm plugin
+    TRT 移植的工具代码
+    作用：
+        将 vectornet 的 state_dict 导出为 weights file, 使用 tensorrt 搭载网络并 load weights file.
 '''
 import torch
 import pickle
@@ -17,48 +15,8 @@ from tqdm import tqdm
 import torch.nn.functional as F
 
 from model.layers.mlp import MLP
-# from model.layers.subgraph import SubGraph
+from model.layers.subgraph import SubGraph
 from model.layers.global_graph import GlobalGraph
-
-
-class ScatterMax(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, src, index):
-        # 调 unique 仅为了输出对应的维度信息
-        index_unique = torch.unique(index)
-        out = torch.zeros((index_unique.shape[0], src.shape[1]), dtype=torch.float32, device=src.device)
-        
-        return out
-
-
-class SubGraph(nn.Module):
-    def __init__(self, in_channels, num_subgraph_layers=3, hidden_unit=64):
-        super(SubGraph, self).__init__()
-        self.num_subgraph_layers = num_subgraph_layers
-        self.hidden_unit = hidden_unit
-        self.out_channels = hidden_unit
-
-        self.layer_seq = nn.Sequential()
-        for i in range(num_subgraph_layers):
-            self.layer_seq.add_module(
-                f'glp_{i}', MLP(in_channels, hidden_unit, hidden_unit))
-            in_channels = hidden_unit * 2
-
-        self.linear = nn.Linear(hidden_unit * 2, hidden_unit)
-
-    def forward(self, x, cluster): 
-        for name, layer in self.layer_seq.named_modules():
-            if isinstance(layer, MLP):
-                x = layer(x)
-                x_max = FakeScatterMax.apply(x, cluster)
-                x = torch.cat([x, x_max[cluster]], dim=-1)
-
-        x = self.linear(x)
-        x = FakeScatterMax.apply(x, cluster)
-
-        return F.normalize(x, p=2.0, dim=1)  # L2 normalization
 
 
 class VectorNetExport(nn.Module):
@@ -129,19 +87,34 @@ class VectorNetExport(nn.Module):
         print("Success load state dict from: ", ckpt_path)
 
 
-if __name__ == "__main__":
-    device = torch.device('cuda:0')
-    model = VectorNetExport(in_channels=6, device=device)
-    ckpt = "/home/zhanghao/code/master/10_PREDICTION/VectorNet/vectornet/work_dir/vectornet/03_10_20_43/best_VectorNet.pth"
-    model.load_ckpt(ckpt)
+def save_weights(model, wts_file):
+    import struct
+    print(f'Writing into {wts_file}')
+    with open(wts_file, 'w') as f:
+        f.write('{}\n'.format(len(model.state_dict().keys())))
+        for k, v in model.state_dict().items():
+            vr = v.reshape(-1).cpu().numpy()
+            f.write('{} {} '.format(k, len(vr)))
+            for vv in vr:
+                f.write(' ')
+                f.write(struct.pack('>f', float(vv)).hex())
+            f.write('\n')
+            
+
+def load_vectornet(ckpt_path, num_features=6, horizon=30):
+    model = VectorNetExport(in_channels=num_features, horizon=horizon)
+    model.load_ckpt(ckpt_path)
     model.eval()
+    return model
 
-    # x = torch.randn((200, 6))
-    # cluster = torch.cat((torch.zeros(50), torch.ones(70), torch.ones(40)*2, torch.ones(40)*3)).long()
-    # id_embedding = torch.randn((int(cluster.max())+1,2))
-    # print(id_embedding.shape)
 
+if __name__ == "__main__":
+    ckpt = "/home/zhanghao/code/master/10_PREDICTION/VectorNet/vectornet/work_dir/vectornet/03_10_20_43/best_VectorNet.pth"
+    wts = "/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/vectornet/vectornet.wts"
     test_pkl = "tools/export/data_seq_40050_features.pkl"
+
+    model = load_vectornet(ckpt)
+
     test_data = pickle.load(open(test_pkl, "rb"))
     x = test_data["x"]
     cluster = test_data["cluster"].long()
@@ -155,23 +128,7 @@ if __name__ == "__main__":
     # print(gt)
     print(gt[-1] - out[-1])
 
-    ONNX_EXPORT = 1
-    if ONNX_EXPORT:
-        import onnx
-        from onnxsim import simplify
+    save_weights(model, wts)
 
-        model.eval()
-        torch.onnx._export(
-            model,
-            (x, cluster, id_embedding),
-            "tools/export/models/fake_vectornet.onnx",
-            input_names=["feat_tensor", "cluster", "id_embedding"],
-            output_names=["pred"],
-            dynamic_axes=None,
-            opset_version=11,
-        )
-        print("export done.")
 
-        # import onnxruntime
-        # sess = onnxruntime.InferenceSession("tools/export/models/fake_vectornet.onnx", providers='TensorrtExecutionProvider') 
-        # ort_output = sess.run(None, {'0': x.numpy(), '1' : cluster.numpy(), '2' : id_embedding.numpy()})[0]
+

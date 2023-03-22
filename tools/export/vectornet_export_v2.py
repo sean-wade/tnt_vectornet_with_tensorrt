@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-15 15:54:01
+LastEditTime: 2023-03-21 16:23:22
 FilePath: /vectornet/tools/export/vectornet_export_v2.py
 LastEditors: zhanghao
 Description: 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     print(gt[-1] - out[-1])
     print("Inference done!!! \n\n\n")
 
-    TRACE_JIT_EXPORT = 1
+    TRACE_JIT_EXPORT = 0
     if TRACE_JIT_EXPORT:
         print("Start jit tracing...")
         traced_script_module = torch.jit.trace(model, (x, cluster, id_embedding, poly_num))
