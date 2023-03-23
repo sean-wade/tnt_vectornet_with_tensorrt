@@ -16,7 +16,7 @@ Contain follow features:
 - [x] overfit the tiny sample dataset
 - [x] simplify the inference pipeline for deploy
 - [x] export onnx by replace scatter_max with fake_op
-- [ ] deploy through TensorRT or other framework
+- [x] deploy through TensorRT or other framework
 
 ## II. Train & Test
 
