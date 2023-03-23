@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-22 15:08:14
+LastEditTime: 2023-03-22 20:25:19
 FilePath: /vectornetx/sub_graph.py
 LastEditors: zhanghao
 Description: 
@@ -89,10 +89,10 @@ class SubGraph(nn.Module):
                 x = torch.cat([x, x_max[cluster]], dim=-1)
 
         x = self.linear(x)
-        return x
-        # x = scatter(x, cluster, dim=0, reduce='max')
-
-        # return F.normalize(x, p=2.0, dim=1)  # L2 normalization
+        x = scatter(x, cluster, dim=0, reduce='max')
+        print(x)
+        print("\n\n\n")
+        return F.normalize(x, p=2.0, dim=1)  # L2 normalization
 
 
 if __name__ == "__main__":

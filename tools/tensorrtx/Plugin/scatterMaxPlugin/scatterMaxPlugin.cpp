@@ -1,4 +1,5 @@
 #include "cuda_fp16.h"
+#include "common/serialize.hpp"
 #include "scatterMaxPlugin.h"
 
 using namespace nvinfer1;
@@ -14,7 +15,7 @@ char const* kSCATTER_MAX_PLUGIN_VERSION{"1"};
 size_t constexpr kSERIALIZATION_SIZE{sizeof(float)};
 } // namespace
 
-ScatterMaxPlugin::ScatterMaxPlugin(std::string const& name) : mName(name)
+ScatterMaxPlugin::ScatterMaxPlugin(std::string const& name, bool padding) : mName(name)
 {
 }
 
@@ -43,26 +44,31 @@ DataType ScatterMaxPlugin::getOutputDataType(int32_t index, DataType const* inpu
     return inputTypes[0];
 }
 
-DimsExprs ScatterMaxPlugin::getOutputDimensions(
-    int32_t outputIndex, DimsExprs const* inputs, int32_t nbInputs, IExprBuilder& exprBuilder) noexcept
+DimsExprs
+ScatterMaxPlugin::getOutputDimensions(int32_t outputIndex, DimsExprs const* inputs, int32_t nbInputs, IExprBuilder& exprBuilder) noexcept
 {
     return inputs[0];
+    // {
+    //     DimsExprs outputDims;
+    //     outputDims.nbDims = 4;
+    //     outputDims.d[0]   = inputs[2].d[0];
+    //     outputDims.d[1]   = inputs[0].d[1];
+    //     outputDims.d[2]   = inputs[0].d[2];
+    //     outputDims.d[3]   = inputs[0].d[3];
+    //     return outputDims;
+    // }
 }
 
-bool ScatterMaxPlugin::supportsFormatCombination(
-    int32_t pos, PluginTensorDesc const* inOut, int32_t nbInputs, int32_t nbOutputs) noexcept
+bool ScatterMaxPlugin::supportsFormatCombination(int32_t pos, PluginTensorDesc const* inOut, int32_t nbInputs, int32_t nbOutputs) noexcept
 {
     switch (pos)
     {
     case 0:
-        return ((inOut[0].type == DataType::kFLOAT || inOut[0].type == DataType::kHALF)
-                && (inOut[0].format == TensorFormat::kLINEAR))
+        return ((inOut[0].type == DataType::kFLOAT || inOut[0].type == DataType::kHALF) && (inOut[0].format == TensorFormat::kLINEAR))
                || ((inOut[0].type == DataType::kINT8)
                    && (inOut[0].format == TensorFormat::kCHW4 || inOut[0].format == TensorFormat::kCHW32));
     case 1:
-    case 2:
-        return (inOut[pos].type == inOut[0].type)
-               || ((inOut[0].type == DataType::kINT8) && (inOut[pos].type == DataType::kHALF));
+    case 2: return (inOut[pos].type == inOut[0].type) || ((inOut[0].type == DataType::kINT8) && (inOut[pos].type == DataType::kHALF));
     case 3: return (inOut[pos].type == inOut[0].type) && (inOut[pos].format == inOut[0].format);
     default: // should NOT be here!
         return false;
@@ -71,12 +77,16 @@ bool ScatterMaxPlugin::supportsFormatCombination(
 }
 
 void ScatterMaxPlugin::configurePlugin(
-    DynamicPluginTensorDesc const* in, int32_t nbInputs, DynamicPluginTensorDesc const* out, int32_t nbOutputs) noexcept
+    DynamicPluginTensorDesc const* in,
+    int32_t                        nbInputs,
+    DynamicPluginTensorDesc const* out,
+    int32_t                        nbOutputs) noexcept
 {
 }
 
-size_t ScatterMaxPlugin::getWorkspaceSize(
-    PluginTensorDesc const* inputs, int32_t nbInputs, PluginTensorDesc const* outputs, int32_t nbOutputs) const noexcept
+size_t
+ScatterMaxPlugin::getWorkspaceSize(PluginTensorDesc const* inputs, int32_t nbInputs, PluginTensorDesc const* outputs, int32_t nbOutputs)
+    const noexcept
 {
     return 0;
 }
@@ -104,31 +114,34 @@ int32_t ScatterMaxPlugin::enqueue(
     //     std::cout << "outputDesc[0].dims[ " << i << "] = " << outputDesc[0].dims.d[i] << std::endl;
     // }
 
-    int32_t nInputSize = inputDesc[0].dims.d[0];  // -1
+    int32_t nFeatsNum   = inputDesc[0].dims.d[0]; // -1 (e.g. 396)
     int32_t nHiddenSize = inputDesc[0].dims.d[1]; // 64
-    int32_t status = -1;
+    int32_t nClusterNum = inputDesc[2].dims.d[0]; // -1 (e.g.  11)
+    int32_t status      = -1;
 
     switch (inputDesc[0].type)
     {
     case DataType::kFLOAT:
     {
-        auto const feature = static_cast<float const*>(inputs[0]);
-        auto const cluster = static_cast<float const*>(inputs[1]);
-        auto       output = static_cast<float*>(outputs[0]);
+        auto const feature       = static_cast<float const*>(inputs[0]);
+        auto const cluster       = static_cast<float const*>(inputs[1]);
+        auto const cluster_count = static_cast<float const*>(inputs[2]);
+        auto       output        = static_cast<float*>(outputs[0]);
 
-        // std::cout << "featsNum = " << nInputSize << "\n";
+        // std::cout << "nFeatsNum = " << nFeatsNum << "\n";
         // std::cout << "nHiddenSize = " << nHiddenSize << "\n";
-        status = computeScatterMaxCUDA<float>(nInputSize, nHiddenSize, feature, cluster, output, stream);
+        // std::cout << "nClusterNum = " << nClusterNum << "\n";
+        status = computeScatterMaxCUDA<float>(nFeatsNum, nHiddenSize, nClusterNum, feature, cluster, cluster_count, output, stream);
         break;
     }
     case DataType::kHALF:
     {
-        auto const feature = static_cast<half const*>(inputs[0]);
-        auto const cluster = static_cast<half const*>(inputs[1]);
-        auto       output = static_cast<half*>(outputs[0]);
+        auto const feature       = static_cast<half const*>(inputs[0]);
+        auto const cluster       = static_cast<half const*>(inputs[1]);
+        auto const cluster_count = static_cast<half const*>(inputs[2]);
+        auto       output        = static_cast<half*>(outputs[0]);
 
-        // status = computeLayerNorm<half>(gridSize, nHiddenSize, input, gamma, beta, output, mEpsilon, stream);
-        status = computeScatterMaxCUDA<half>(nInputSize, nHiddenSize, feature, cluster, output, stream);
+        status = computeScatterMaxCUDA<half>(nFeatsNum, nHiddenSize, nClusterNum, feature, cluster, cluster_count, output, stream);
         break;
     }
     default:
@@ -189,9 +202,9 @@ std::vector<PluginField> ScatterMaxPluginCreator::mPluginAttributes;
 ScatterMaxPluginCreator::ScatterMaxPluginCreator()
 {
     mPluginAttributes.clear();
-    mPluginAttributes.emplace_back(PluginField("epsilon", nullptr, PluginFieldType::kFLOAT32, 1));
+    // mPluginAttributes.emplace_back(PluginField("padding", nullptr, PluginFieldType::kCHAR, 1));
     mFC.nbFields = mPluginAttributes.size();
-    mFC.fields = mPluginAttributes.data();
+    mFC.fields   = mPluginAttributes.data();
 }
 
 ScatterMaxPluginCreator::~ScatterMaxPluginCreator()
@@ -200,7 +213,6 @@ ScatterMaxPluginCreator::~ScatterMaxPluginCreator()
 
 IPluginV2* ScatterMaxPluginCreator::createPlugin(char const* name, PluginFieldCollection const* fc) noexcept
 {
-    std::cout << "createPlugin createPlugin \n";
     try
     {
         PLUGIN_VALIDATE(fc != nullptr);
@@ -215,8 +227,7 @@ IPluginV2* ScatterMaxPluginCreator::createPlugin(char const* name, PluginFieldCo
     return nullptr;
 }
 
-IPluginV2*
-ScatterMaxPluginCreator::deserializePlugin(char const* name, void const* serialData, size_t serialLength) noexcept
+IPluginV2* ScatterMaxPluginCreator::deserializePlugin(char const* name, void const* serialData, size_t serialLength) noexcept
 {
     try
     {

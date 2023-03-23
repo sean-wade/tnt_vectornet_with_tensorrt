@@ -19,8 +19,10 @@ template <typename T>
 int32_t computeScatterMaxCUDA(
     int32_t const featsNum,
     int32_t const hiddenSize,
+    int32_t const clusterNum,
     T const*      feature,
     T const*      cluster,
+    T const*      cluster_count,
     T*            output,
     cudaStream_t  stream);
 

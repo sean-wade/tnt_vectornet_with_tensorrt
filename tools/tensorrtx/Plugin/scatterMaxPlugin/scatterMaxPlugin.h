@@ -25,7 +25,7 @@ class ScatterMaxPlugin : public IPluginV2DynamicExt
 {
 public:
     ScatterMaxPlugin() = delete;
-    ScatterMaxPlugin(std::string const& name);
+    ScatterMaxPlugin(std::string const& name, bool padding = true);
     ~ScatterMaxPlugin() override = default;
 
     // Method inherited from IPluginV2
@@ -45,20 +45,14 @@ public:
 
     // Method inherited from IPluginV2DynamicExt
     IPluginV2DynamicExt* clone() const noexcept override;
-    DimsExprs            getOutputDimensions(
-                   int32_t outputIndex, DimsExprs const* inputs, int32_t nbInputs, IExprBuilder& exprBuilder) noexcept override;
-    bool supportsFormatCombination(
-        int32_t pos, PluginTensorDesc const* inOut, int32_t nbInputs, int32_t nbOutputs) noexcept override;
-    void configurePlugin(
-        DynamicPluginTensorDesc const* in,
-        int32_t                        nbInputs,
-        DynamicPluginTensorDesc const* out,
-        int32_t                        nbOutputs) noexcept override;
-    size_t getWorkspaceSize(
-        PluginTensorDesc const* inputs,
-        int32_t                 nbInputs,
-        PluginTensorDesc const* outputs,
-        int32_t                 nbOutputs) const noexcept override;
+    DimsExprs
+         getOutputDimensions(int32_t outputIndex, DimsExprs const* inputs, int32_t nbInputs, IExprBuilder& exprBuilder) noexcept override;
+    bool supportsFormatCombination(int32_t pos, PluginTensorDesc const* inOut, int32_t nbInputs, int32_t nbOutputs) noexcept override;
+    void
+    configurePlugin(DynamicPluginTensorDesc const* in, int32_t nbInputs, DynamicPluginTensorDesc const* out, int32_t nbOutputs) noexcept
+        override;
+    size_t getWorkspaceSize(PluginTensorDesc const* inputs, int32_t nbInputs, PluginTensorDesc const* outputs, int32_t nbOutputs)
+        const noexcept override;
     int32_t enqueue(
         PluginTensorDesc const* inputDesc,
         PluginTensorDesc const* outputDesc,
@@ -81,7 +75,7 @@ public:
     char const*                  getPluginVersion() const noexcept override;
     PluginFieldCollection const* getFieldNames() noexcept override;
     IPluginV2*                   createPlugin(char const* name, PluginFieldCollection const* fc) noexcept override;
-    IPluginV2* deserializePlugin(char const* name, void const* serialData, size_t serialLength) noexcept override;
+    IPluginV2*                   deserializePlugin(char const* name, void const* serialData, size_t serialLength) noexcept override;
 
 private:
     static PluginFieldCollection    mFC;

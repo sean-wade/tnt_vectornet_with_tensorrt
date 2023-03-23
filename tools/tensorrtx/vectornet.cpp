@@ -10,24 +10,19 @@
 using namespace nvinfer1;
 static Logger gLogger;
 
-const int INPUT_CHANNEL = 6;
-const int OUTPUT_CHANNEL = 64;
-const int HIDDEN_CHANNEL = 64;
-const int FEATS_NUM = 10;
+const int INPUT_CHANNEL         = 6;
+const int OUTPUT_CHANNEL        = 64;
+const int HIDDEN_CHANNEL        = 64;
+const int GLOBAL_GRAPH_CHANNEL  = 64;
+const int TRAJ_PRED_MLP_CHANNEL = 64;
+const int FEATS_NUM             = 10;
+const int CLUSTER_NUM           = 5;
+const int FINAL_PRED_CHANNEL    = 60;
 
-// print tensor dimensions
-void printDims(ITensor* data)
-{
-    Dims dims = data->getDimensions();
-    int  nbDims = dims.nbDims;
-    for (int d = 0; d < nbDims; d++)
-        std::cout << dims.d[d] << " "; // << dims.d[1] << " " << dims.d[2] << " " << dims.d[3] << std::endl;
-    std::string sss;
-    if (data->getType() == DataType::kHALF) sss = "float16";
-    if (data->getType() == DataType::kFLOAT) sss = "float32";
-    std::cout << sss << " ";
-    std::cout << std::endl;
-}
+const int OUT_PUT_BUFFER_NUM = FINAL_PRED_CHANNEL;
+
+const std::string WTS_FILE    = "/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/vectornet/vectornet.wts";
+const std::string ENGINE_FILE = "../vectornet.engine";
 
 std::map<std::string, Weights> loadWeights(const std::string file)
 {
@@ -60,9 +55,9 @@ std::map<std::string, Weights> loadWeights(const std::string file)
             // Change hex values to uint32 (for higher values)
             input >> std::hex >> val[x];
         }
-        std::cout << "\n";
+        std::cout << w_name << "\n";
         wt.values = val;
-        wt.count = size;
+        wt.count  = size;
 
         // Add weight values against its name (key)
         weightMap[w_name] = wt;
@@ -75,57 +70,34 @@ ICudaEngine* createVectornetEngine(unsigned int maxBatchSize, IBuilder* builder,
 {
     std::cout << "[INFO]: Creating MLP using TensorRT..." << std::endl;
     // Load Weights from relevant file
-    std::map<std::string, Weights> weightMap =
-        loadWeights("/home/zhanghao/code/master/6_DEPLOY/vectornetx/data/sub_graph/sub_graph.wts");
+    std::map<std::string, Weights> weightMap = loadWeights(WTS_FILE);
 
     // INetworkDefinition *network = builder->createNetworkV2(0U);
     INetworkDefinition* network = builder->createNetworkV2(1U << int(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH));
 
-    ITensor* feats = network->addInput("feats", DataType::kFLOAT, Dims4{-1, INPUT_CHANNEL, 1, 1});
-    ITensor* cluster = network->addInput("cluster", DataType::kFLOAT, Dims4{-1, 1, 1, 1});
+    ITensor* feats         = network->addInput("feats", DataType::kFLOAT, Dims4{-1, INPUT_CHANNEL, 1, 1});
+    ITensor* cluster       = network->addInput("cluster", DataType::kFLOAT, Dims4{-1, 1, 1, 1});
+    ITensor* cluster_count = network->addInput("cluster_count", DataType::kFLOAT, Dims4{-1, 1, 1, 1});
+    ITensor* id_embedding  = network->addInput("id_embedding", DataType::kFLOAT, Dims4{-1, 2, 1, 1});
     assert(feats);
     assert(cluster);
+    assert(cluster_count);
+    assert(id_embedding);
 
-    // 1. MLP + Scatter + Concat
-    auto mlp1 = MLP_block(network, weightMap, *feats, HIDDEN_CHANNEL, HIDDEN_CHANNEL, true, "layer_seq.glp_0.");
-    IPluginV2Layer* scatter1 = ScatterMax_Plugin(network, mlp1->getOutput(0), cluster, HIDDEN_CHANNEL, "scatter_max1");
-    ITensor*        inputTensorsCat1[] = {mlp1->getOutput(0), scatter1->getOutput(0)};
-    IConcatenationLayer* concat1 = network->addConcatenation(inputTensorsCat1, 2);
-    concat1->setAxis(1);
-    assert(mlp1);
-    assert(scatter1);
-    assert(concat1);
+    ILayer* sub_graph_out = SubGraph(network, weightMap, feats, cluster, cluster_count, HIDDEN_CHANNEL, HIDDEN_CHANNEL, true, "subgraph.");
+    ILayer* global_graph_target =
+        GlobalGraph(network, weightMap, sub_graph_out->getOutput(0), id_embedding, GLOBAL_GRAPH_CHANNEL, "global_graph.");
 
-    // 2. MLP + Scatter + Concat
-    auto mlp2 =
-        MLP_block(network, weightMap, *concat1->getOutput(0), HIDDEN_CHANNEL, HIDDEN_CHANNEL, true, "layer_seq.glp_1.");
-    IPluginV2Layer* scatter2 = ScatterMax_Plugin(network, mlp2->getOutput(0), cluster, HIDDEN_CHANNEL, "scatter_max2");
-    ITensor*        inputTensorsCat2[] = {mlp2->getOutput(0), scatter2->getOutput(0)};
-    IConcatenationLayer* concat2 = network->addConcatenation(inputTensorsCat2, 2);
-    concat2->setAxis(1);
-    assert(mlp2);
-    assert(scatter2);
-    assert(concat2);
+    ILayer* pred_mlp = MlpBlock(
+        network, weightMap, *global_graph_target->getOutput(0), TRAJ_PRED_MLP_CHANNEL, TRAJ_PRED_MLP_CHANNEL, false, "traj_pred_mlp.0.");
+    assert(pred_mlp);
 
-    // 3. MLP + Scatter + Concat
-    auto mlp3 =
-        MLP_block(network, weightMap, *concat2->getOutput(0), HIDDEN_CHANNEL, HIDDEN_CHANNEL, true, "layer_seq.glp_2.");
-    IPluginV2Layer* scatter3 = ScatterMax_Plugin(network, mlp3->getOutput(0), cluster, HIDDEN_CHANNEL, "scatter_max3");
-    ITensor*        inputTensorsCat3[] = {mlp3->getOutput(0), scatter3->getOutput(0)};
-    IConcatenationLayer* concat3 = network->addConcatenation(inputTensorsCat3, 2);
-    concat3->setAxis(1);
-    assert(mlp3);
-    assert(scatter3);
-    assert(concat3);
+    IFullyConnectedLayer* pred_fc = network->addFullyConnected(
+        *pred_mlp->getOutput(0), FINAL_PRED_CHANNEL, weightMap["traj_pred_mlp.1.weight"], weightMap["traj_pred_mlp.1.bias"]);
+    assert(pred_fc);
 
-    // 4. Linear
-    IFullyConnectedLayer* linear = network->addFullyConnected(
-        *concat3->getOutput(0), OUTPUT_CHANNEL, weightMap["linear.weight"], weightMap["linear.bias"]);
-    assert(linear);
-
-    // set output
-    linear->getOutput(0)->setName("out");
-    network->markOutput(*linear->getOutput(0));
+    pred_fc->getOutput(0)->setName("out");
+    network->markOutput(*pred_fc->getOutput(0));
 
     // Set configurations
     builder->setMaxBatchSize(1);
@@ -136,12 +108,20 @@ ICudaEngine* createVectornetEngine(unsigned int maxBatchSize, IBuilder* builder,
 
     IOptimizationProfile* profile = builder->createOptimizationProfile();
     profile->setDimensions("feats", OptProfileSelector::kMIN, Dims4(1, INPUT_CHANNEL, 1, 1));
-    profile->setDimensions("feats", OptProfileSelector::kOPT, Dims4(2, INPUT_CHANNEL, 1, 1));
-    profile->setDimensions("feats", OptProfileSelector::kMAX, Dims4(512, INPUT_CHANNEL, 1, 1));
+    profile->setDimensions("feats", OptProfileSelector::kOPT, Dims4(128, INPUT_CHANNEL, 1, 1));
+    profile->setDimensions("feats", OptProfileSelector::kMAX, Dims4(1024, INPUT_CHANNEL, 1, 1));
 
     profile->setDimensions("cluster", OptProfileSelector::kMIN, Dims4(1, 1, 1, 1));
-    profile->setDimensions("cluster", OptProfileSelector::kOPT, Dims4(2, 1, 1, 1));
-    profile->setDimensions("cluster", OptProfileSelector::kMAX, Dims4(512, 1, 1, 1));
+    profile->setDimensions("cluster", OptProfileSelector::kOPT, Dims4(128, 1, 1, 1));
+    profile->setDimensions("cluster", OptProfileSelector::kMAX, Dims4(1024, 1, 1, 1));
+
+    profile->setDimensions("cluster_count", OptProfileSelector::kMIN, Dims4(1, 1, 1, 1));
+    profile->setDimensions("cluster_count", OptProfileSelector::kOPT, Dims4(32, 1, 1, 1));
+    profile->setDimensions("cluster_count", OptProfileSelector::kMAX, Dims4(256, 1, 1, 1));
+
+    profile->setDimensions("id_embedding", OptProfileSelector::kMIN, Dims4(1, 2, 1, 1));
+    profile->setDimensions("id_embedding", OptProfileSelector::kOPT, Dims4(32, 2, 1, 1));
+    profile->setDimensions("id_embedding", OptProfileSelector::kMAX, Dims4(256, 2, 1, 1));
     config->addOptimizationProfile(profile);
 
     // Build CUDA Engine using network and configurations
@@ -155,60 +135,81 @@ ICudaEngine* createVectornetEngine(unsigned int maxBatchSize, IBuilder* builder,
     network->destroy();
 
     // Release host memory
-    for (auto& mem : weightMap) { free((void*)(mem.second.values)); }
+    for (auto& mem : weightMap)
+    {
+        free((void*)(mem.second.values));
+    }
 
     std::cout << "[INFO]: CreateMLPEngine success." << std::endl;
     return engine;
 }
 
 void doInference(
-    IExecutionContext& context, float* feature, float* cluster, float* output, int batchSize, int feats_num)
+    IExecutionContext& context,
+    float*             feature,
+    float*             cluster,
+    float*             cluster_count,
+    float*             id_embedding,
+    float*             output,
+    int                batchSize,
+    int                feats_num,
+    int                cluster_num)
 {
-    // Get engine from the context
     const ICudaEngine& engine = context.getEngine();
 
-    // Pointers to feature and output device buffers to pass to engine.
-    // Engine requires exactly IEngine::getNbBindings() number of buffers.
-    assert(engine.getNbBindings() == 3);
-    void* buffers[3];
+    // assert(engine.getNbBindings() == 5);
+    void* buffers[5];
 
-    // In order to bind the buffers, we need to know the names of the input and output tensors.
-    // Note that indices are guaranteed to be less than IEngine::getNbBindings()
     const int inputIndex1 = engine.getBindingIndex("feats");
     const int inputIndex2 = engine.getBindingIndex("cluster");
-    const int outputIndex = engine.getBindingIndex("out");
+    const int inputIndex3 = engine.getBindingIndex("cluster_count");
+    const int inputIndex4 = engine.getBindingIndex("id_embedding");
     context.setBindingDimensions(inputIndex1, Dims4(feats_num, INPUT_CHANNEL, 1, 1));
     context.setBindingDimensions(inputIndex2, Dims4(feats_num, 1, 1, 1));
+    context.setBindingDimensions(inputIndex3, Dims4(cluster_num, 1, 1, 1));
+    context.setBindingDimensions(inputIndex4, Dims4(cluster_num, 2, 1, 1));
 
     // Create GPU buffers on device -- allocate memory for input and output
     cudaMalloc(&buffers[inputIndex1], feats_num * INPUT_CHANNEL * sizeof(float));
     cudaMalloc(&buffers[inputIndex2], feats_num * 1 * sizeof(float));
-    cudaMalloc(&buffers[outputIndex], feats_num * OUTPUT_CHANNEL * sizeof(float));
+    cudaMalloc(&buffers[inputIndex3], cluster_num * 1 * sizeof(float));
+    cudaMalloc(&buffers[inputIndex4], cluster_num * 2 * sizeof(float));
 
-    // create CUDA stream for simultaneous CUDA operations
+#ifdef DEBUG_BEFORE_FINAL_SCATTER
+    const int outputIndex = engine.getBindingIndex("out");
+    cudaMalloc(&buffers[outputIndex], feats_num * OUTPUT_CHANNEL * sizeof(float));
+#else
+    const int outputIndex = engine.getBindingIndex("out");
+    cudaMalloc(&buffers[outputIndex], OUT_PUT_BUFFER_NUM * sizeof(float));
+    // cudaMalloc(&buffers[outputIndex], cluster_num * OUTPUT_CHANNEL * sizeof(float));
+    // cudaMalloc(&buffers[outputIndex], cluster_num * cluster_num * sizeof(float));
+#endif
+
     cudaStream_t stream;
     cudaStreamCreate(&stream);
 
-    // copy input from host (CPU) to device (GPU)  in stream
-    cudaMemcpyAsync(
-        buffers[inputIndex1], feature, feats_num * INPUT_CHANNEL * sizeof(float), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(buffers[inputIndex1], feature, feats_num * INPUT_CHANNEL * sizeof(float), cudaMemcpyHostToDevice, stream);
     cudaMemcpyAsync(buffers[inputIndex2], cluster, feats_num * 1 * sizeof(float), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(buffers[inputIndex3], cluster_count, cluster_num * 1 * sizeof(float), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(buffers[inputIndex4], id_embedding, cluster_num * 2 * sizeof(float), cudaMemcpyHostToDevice, stream);
 
-    // execute inference using context provided by engine
     context.enqueue(batchSize, buffers, stream, nullptr);
 
-    // copy output back from device (GPU) to host (CPU)
-    cudaMemcpyAsync(
-        output, buffers[outputIndex], feats_num * OUTPUT_CHANNEL * sizeof(float), cudaMemcpyDeviceToHost, stream);
+#ifdef DEBUG_BEFORE_FINAL_SCATTER
+    cudaMemcpyAsync(output, buffers[outputIndex], feats_num * OUTPUT_CHANNEL * sizeof(float), cudaMemcpyDeviceToHost, stream);
+#else
+    cudaMemcpyAsync(output, buffers[outputIndex], OUT_PUT_BUFFER_NUM * sizeof(float), cudaMemcpyDeviceToHost, stream);
+    // cudaMemcpyAsync(output, buffers[outputIndex], cluster_num * OUTPUT_CHANNEL * sizeof(float), cudaMemcpyDeviceToHost, stream);
+    // cudaMemcpyAsync(output, buffers[outputIndex], cluster_num * cluster_num * sizeof(float), cudaMemcpyDeviceToHost, stream);
+#endif
 
-    // synchronize the stream to prevent issues
-    //      (block CUDA and wait for CUDA operations to be completed)
     cudaStreamSynchronize(stream);
 
-    // Release stream and buffers (memory)
     cudaStreamDestroy(stream);
     cudaFree(buffers[inputIndex1]);
     cudaFree(buffers[inputIndex2]);
+    cudaFree(buffers[inputIndex3]);
+    cudaFree(buffers[inputIndex4]);
     cudaFree(buffers[outputIndex]);
 }
 
@@ -218,8 +219,7 @@ void performInference()
     char*  trtModelStream{nullptr};
     size_t size{0};
 
-    // read model from the engine file
-    std::ifstream file("../vectornet.engine", std::ios::binary);
+    std::ifstream file(ENGINE_FILE, std::ios::binary);
     if (file.good())
     {
         file.seekg(0, file.end);
@@ -231,62 +231,62 @@ void performInference()
         file.close();
     }
 
-    // create a runtime (required for deserialization of model) with NVIDIA's logger
     IRuntime* runtime = createInferRuntime(gLogger);
     assert(runtime != nullptr);
 
-    // deserialize engine for using the char-stream
     ICudaEngine* engine = runtime->deserializeCudaEngine(trtModelStream, size, nullptr);
     assert(engine != nullptr);
 
-    // create execution context -- required for inference executions
     IExecutionContext* context = engine->createExecutionContext();
     assert(context != nullptr);
 
     int batch_size = 1;
 
-    // array for output
-    float out[OUTPUT_CHANNEL * batch_size * FEATS_NUM];
-    float feature[INPUT_CHANNEL * batch_size * FEATS_NUM] = {
-        // 0.0, 1, 2, 3, 4, 5, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 121.0, 132.0, 103.0, 114.0, 105.0, 135.0};
-        1.2855,  0.9948,  0.2046,  0.0493,  -0.1711, 0.2865,  0.7435, -1.0972, 0.6326,  -0.5128, -0.9912, 0.3193,
-        0.3489,  -0.9907, 1.0864,  -0.0765, -1.4389, -1.3965, 0.5083, -1.5095, -0.3404, 0.0123,  0.6280,  -0.6943,
-        -0.8992, 0.2768,  0.5403,  1.4955,  0.2885,  -1.9019, 0.4183, 0.0400,  2.1108,  1.0964,  0.2342,  0.8872,
-        -0.7857, -0.9230, 0.6942,  -2.0588, -0.8065, 0.2856,  1.1959, 0.1580,  -1.1589, 1.0871,  1.1840,  0.1470,
-        -0.0257, 0.0598,  -1.2005, -1.1679, 0.8444,  -0.3796, 0.2261, 0.0967,  -0.4144, 0.4793,  -0.7380, 0.8590};
-    float cluster[batch_size * FEATS_NUM] = {0, 1, 1, 2, 2, 3, 3, 3, 3, 4};
-    // float feature[INPUT_CHANNEL * batch_size * FEATS_NUM] = {0.0, 1, 2, 3, 4,
-    // 5, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0}; float feature[INPUT_CHANNEL * batch_size * FEATS_NUM]; for
-    // (int i = 0; i < INPUT_CHANNEL * batch_size * FEATS_NUM; i++)
-    // {
-    //     feature[i] = 0.0;
-    // }
+    float feature[INPUT_CHANNEL * FEATS_NUM] = {-0.3801, -0.1300, 1.1666,  -1.1327, 0.6438, 0.6729,  -1.1299, -2.2857, 0.1849,  0.0493,
+                                                -0.4179, -0.5331, 0.7467,  -1.0006, 1.4848, 0.2771,  0.1393,  -0.9162, -1.7744, 0.8850,
+                                                -1.6748, 1.3581,  -0.4987, -0.7244, 0.7941, -0.4109, -0.3446, -0.5246, -0.8153, -0.5685,
+                                                1.9105,  -0.1069, 0.7214,  0.5255,  0.3654, -0.3434, 0.7163,  -0.6460, 1.9680,  0.8964,
+                                                0.3845,  3.4347,  -2.6291, -0.9330, 0.6411, 0.9983,  0.6731,  0.9110,  -2.0634, -0.5751,
+                                                1.4070,  0.5285,  -0.1171, -0.1863, 2.1200, 1.3745,  0.9763,  -0.1193, -0.3343, -1.5933};
+    float cluster[FEATS_NUM]                 = {0, 1, 1, 2, 2, 3, 3, 3, 3, 4};
+    float cluster_count[CLUSTER_NUM]         = {1, 2, 2, 4, 1};
+    float id_embedding[CLUSTER_NUM * 2]      = {-0.3330, -0.7534, 1.1834, 0.6447, -1.1398, 0.5933, 1.5586, 1.0459, 0.2039, 1.0544};
 
-    // doInference(*context, feature, cluster, out, batch_size, FEATS_NUM);
+#ifdef DEBUG_BEFORE_FINAL_SCATTER
+    float out[OUTPUT_CHANNEL * FEATS_NUM];
+#else
+    float out[OUT_PUT_BUFFER_NUM];
+    // float out[FINAL_PRED_CHANNEL];
+    // float out[OUTPUT_CHANNEL * CLUSTER_NUM];
+    // float out[CLUSTER_NUM * CLUSTER_NUM];
+#endif
 
-    // time the execution
     auto start = std::chrono::system_clock::now();
 
-    for (int k = 0; k < 1000; k++)
+    for (int k = 0; k < 1; k++)
     {
-        // do inference using the parameters
-        doInference(*context, feature, cluster, out, batch_size, FEATS_NUM);
+        doInference(*context, feature, cluster, cluster_count, id_embedding, out, batch_size, FEATS_NUM, CLUSTER_NUM);
     }
 
-    // time the execution
     auto end = std::chrono::system_clock::now();
-    std::cout << "\n[INFO]: Time taken by execution: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+    std::cout << "\n[INFO]: Time taken by execution: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms"
+              << std::endl;
 
     // free the captured space
     context->destroy();
     engine->destroy();
     runtime->destroy();
 
-    std::cout << "\nInput:\t";
-    for (float i : feature) { std::cout << i << ", "; }
-    std::cout << "\nOutput:\t";
-    for (float j : out) { std::cout << j << ", "; }
+    std::cout << "\n>>>> Input:\n\n";
+    for (float i : feature)
+    {
+        std::cout << i << ", ";
+    }
+    std::cout << "\n>>>> Output:\n\n";
+    for (float j : out)
+    {
+        std::cout << j << ", ";
+    }
     std::cout << std::endl;
 }
 
@@ -332,7 +332,7 @@ void performSerialization()
     std::cout << "[INFO]: Writing engine into binary..." << std::endl;
 
     // Open the file and write the contents there in binary format
-    std::ofstream p("../vectornet.engine", std::ios::binary);
+    std::ofstream p(ENGINE_FILE, std::ios::binary);
     if (!p)
     {
         std::cerr << "could not open plan output file" << std::endl;
@@ -356,8 +356,14 @@ int checkArgs(int argc, char** argv)
         std::cerr << "./vectornet -d   // deserialize plan file and run inference" << std::endl;
         return -1;
     }
-    if (std::string(argv[1]) == "-s") { return 1; }
-    else if (std::string(argv[1]) == "-d") { return 2; }
+    if (std::string(argv[1]) == "-s")
+    {
+        return 1;
+    }
+    else if (std::string(argv[1]) == "-d")
+    {
+        return 2;
+    }
     return -1;
 }
 

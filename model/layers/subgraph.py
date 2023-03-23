@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-13 11:20:48
+LastEditTime: 2023-03-23 12:08:01
 FilePath: /vectornet/model/layers/subgraph.py
 LastEditors: zhanghao
 Description: 
@@ -39,9 +39,14 @@ class SubGraph(nn.Module):
                 x_max = scatter(x, cluster, dim=0, reduce='max')
                 x = torch.cat([x, x_max[cluster]], dim=-1)
 
+        # print("subgraph before linear: \n")
+        # for xx in x:
+        #     print(xx[:64])
+        # print("\n\n\n")
+
         x = self.linear(x)
         x = scatter(x, cluster, dim=0, reduce='max')
-
+        
         return F.normalize(x, p=2.0, dim=1)  # L2 normalization
 
 

@@ -42,10 +42,16 @@ file(GLOB_RECURSE SC_PLUGIN_CU_SOURCES ${PROJECT_SOURCE_DIR}/Plugin/scatterMaxPl
 cuda_add_library(scattermax_plugin SHARED ${SC_PLUGIN_CU_SOURCES} ${SC_PLUGIN_SOURCES})
 target_link_libraries(scattermax_plugin nvinfer)
 
+# scattermax_nopadding_plugin
+file(GLOB_RECURSE SC_PLUGIN_SOURCES ${PROJECT_SOURCE_DIR}/Plugin/scatterMaxNoPaddingPlugin/*.cpp ${PROJECT_SOURCE_DIR}/Plugin/common/*.cpp)
+file(GLOB_RECURSE SC_PLUGIN_CU_SOURCES ${PROJECT_SOURCE_DIR}/Plugin/scatterMaxNoPaddingPlugin/*.cu)
+cuda_add_library(scattermax_nopadding_plugin SHARED ${SC_PLUGIN_CU_SOURCES} ${SC_PLUGIN_SOURCES})
+target_link_libraries(scattermax_nopadding_plugin nvinfer)
+
 # create link for executable files
 add_executable(vectornet vectornet.cpp)
 
-target_link_libraries(vectornet ${CUDA_LIBRARIES} nvinfer layernorm_plugin scattermax_plugin)
+target_link_libraries(vectornet ${CUDA_LIBRARIES} nvinfer layernorm_plugin scattermax_plugin scattermax_nopadding_plugin)
 
 add_definitions(-O2 -pthread)
 

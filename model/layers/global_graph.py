@@ -56,10 +56,22 @@ class SelfAttentionFCLayer(nn.Module):
         query = self.q_lin(x)
         key = self.k_lin(x)
         value = self.v_lin(x)
-
+        
         scores = torch.bmm(query, key.transpose(1, 2)) / math.sqrt(self.graph_width)
+
         attention_weights = self.masked_softmax(scores, valid_lens)
         x = torch.bmm(attention_weights, value)
+
+        # print("query output: \n", query, "\n\n")
+        # print("query shape: \n", query.shape)
+        # print("key output: \n", key.transpose(1, 2), "\n\n")
+        # print("query shape: \n", query.shape)
+        print("scores output: \n", scores * math.sqrt(self.graph_width), "\n")
+        print("scores norm output: \n", scores, "\n")
+        print("scores shape: \n", scores.shape, "\n\n")
+        # print("attention_weights output: \n", attention_weights, "\n")
+        # print("attention_weights shape: \n", attention_weights.shape, "\n\n")
+
         return x
 
     @staticmethod

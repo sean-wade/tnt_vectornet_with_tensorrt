@@ -147,7 +147,7 @@ if __name__ == "__main__":
     print(gt[-1] - out[-1])
     print("Inference done!!! \n\n\n")
 
-    TRACE_JIT_EXPORT = 0
+    TRACE_JIT_EXPORT = 1
     if TRACE_JIT_EXPORT:
         print("Start jit tracing...")
         traced_script_module = torch.jit.trace(model, (x, cluster, id_embedding, poly_num))
