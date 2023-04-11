@@ -2,7 +2,7 @@
 
 Paper: [VectorNet: Encoding HD Maps and Agent Dynamics from Vectorized Representation](https://arxiv.org/abs/2005.04259)
 
-Migrate from the [TNT implemention](https://github.com/Henry1iu/TNT-Trajectory-Prediction)
+Thanks to this [TNT implemention](https://github.com/Henry1iu/TNT-Trajectory-Prediction)
 
 ## I. Features
 
