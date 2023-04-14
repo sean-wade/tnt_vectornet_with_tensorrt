@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 14:17:25
+LastEditTime: 2023-04-14 16:40:14
 FilePath: /my_vectornet_github/model/tnt.py
 LastEditors: zhanghao
 Description: 
@@ -140,9 +140,11 @@ class TNT(nn.Module):
             score = self.traj_score_layer(target_feat, trajs)
 
             traj_final_k, traj_final_k_prob = self.traj_selection(trajs, score)
+            traj_final_k_prob = traj_final_k_prob.view(self.k)
+            traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
 
             batch_trajs.append(traj_final_k.view(self.k, self.horizon, 2))
-            batch_traj_probs.append(traj_final_k_prob.view(self.k))
+            batch_traj_probs.append(traj_final_k_prob)
 
         return batch_trajs, batch_traj_probs
 

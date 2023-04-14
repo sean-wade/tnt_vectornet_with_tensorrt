@@ -16,6 +16,7 @@ Contain follow features:
 - [x] better visualize the evaluation result
 - [x] use tensorboard to visualize the loss & metric
 - [x] simplify the inference pipeline for deploy
+- [x] add output log during training
 - [x] deploy through TensorRT and libtorch
 
 ## II. Train & Test

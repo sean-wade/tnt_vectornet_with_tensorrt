@@ -2,6 +2,8 @@ import os
 import gc
 import json
 from tqdm import tqdm
+from loguru import logger
+from trainer.utils.logger import setup_logger
 
 import torch
 import torch.distributed as dist
@@ -64,6 +66,20 @@ class Trainer(object):
             torch.cuda.set_device(self.cuda_id)
             dist.init_process_group(backend='nccl', init_method='env://')
 
+        # log
+        self.enable_log = enable_log
+        self.save_folder = save_folder
+        if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
+            self.logger = SummaryWriter(log_dir=os.path.join(self.save_folder, "log"))
+        self.log_freq = log_freq
+        setup_logger(
+            self.save_folder,
+            distributed_rank=0,
+            filename="train_log.txt",
+            mode="a",
+        )
+        self.verbose = verbose
+        
         # dataset
         self.trainset = trainset
         self.evalset = evalset
@@ -130,13 +146,6 @@ class Trainer(object):
         self.min_eval_loss = None
         self.best_metric = None
 
-        # log
-        self.enable_log = enable_log
-        self.save_folder = save_folder
-        if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
-            self.logger = SummaryWriter(log_dir=os.path.join(self.save_folder, "log"))
-        self.log_freq = log_freq
-        self.verbose = verbose
         gc.enable()
     
 
@@ -202,7 +211,7 @@ class Trainer(object):
             "min_eval_loss": loss
         }, os.path.join(self.save_folder, "checkpoint_iter{}.ckpt".format(iter_epoch)))
         if self.verbose:
-            print("[Trainer]: Saving checkpoint to {}...".format(self.save_folder))
+            logger.info("[Trainer]: Saving checkpoint to {}...".format(self.save_folder))
 
 
     def eval_save_model(self, prefix=""):
@@ -223,14 +232,14 @@ class Trainer(object):
         # skip model saving if the minADE is not better
         if self.best_metric and isinstance(metric, dict):
             if metric["minADE"] >= self.best_metric["minADE"]:
-                print("[Trainer]: Best minADE: {}; Current minADE: {}; Skip model saving...".format(
+                logger.info("[Trainer]: Best minADE: {}; Current minADE: {}; Skip model saving...".format(
                     self.best_metric["minADE"],
                     metric["minADE"]))
                 return metric
 
         # save best metric
         if self.verbose:
-            print("[Trainer]: Best minADE: {}; Current minADE: {}; Saving model to {}...".format(
+            logger.info("[Trainer]: Best minADE: {}; Current minADE: {}; Saving model to {}...".format(
                 self.best_metric["minADE"] if self.best_metric else "Inf",
                 metric["minADE"],
                 self.save_folder))
@@ -263,13 +272,13 @@ class Trainer(object):
                 self.model.load_state_dict(ckpt["model_state_dict"])
                 self.optim.load_state_dict(ckpt["optimizer_state_dict"])
                 self.min_eval_loss = ckpt["min_eval_loss"]
-                print("Success load checkpoint: ", load_path)
+                logger.info("Success load checkpoint: %s"%load_path)
             except:
                 raise Exception("[Trainer]: Error in loading the checkpoint file {}".format(load_path))
         elif mode == 'm':
             try:
                 self.model.load_state_dict(torch.load(load_path, map_location=self.device), strict=False)
-                print("Success load model: ", load_path)
+                logger.info("Success load model: %s"%load_path)
             except:
                 raise Exception("[Trainer]: Error in loading the model file {}".format(load_path))
         else:
@@ -295,7 +304,7 @@ class Trainer(object):
 
         self.model.eval()
         with torch.no_grad():
-            for data in tqdm(self.test_loader):
+            for data in tqdm(self.test_loader, desc="Computing metrics..."):
                 data = self.data_to_device(data)
                 batch_size = len(data)
 

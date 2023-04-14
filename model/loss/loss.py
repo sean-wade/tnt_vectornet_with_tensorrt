@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 18:46:27
+LastEditTime: 2023-04-14 15:45:51
 FilePath: /my_vectornet_github/model/loss/loss.py
 LastEditors: zhanghao
 Description: 
@@ -163,7 +163,8 @@ class TNTLoss(nn.Module):
             "tar_cls_loss": cls_loss_total, 
             "tar_offset_loss": offset_loss_total, 
             "traj_loss": reg_loss_total, 
-            "score_loss": score_loss_total
+            "score_loss": score_loss_total,
+            "aux_loss" : aux_loss_total
         }
 
         return loss, loss_dict

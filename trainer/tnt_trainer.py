@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 13:59:14
+LastEditTime: 2023-04-14 16:34:05
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -8,6 +8,7 @@ Description:
 import os
 import numpy as np
 from tqdm import tqdm
+from loguru import logger
 from matplotlib import pyplot as plt
 
 import torch
@@ -127,10 +128,10 @@ class TNTTrainer(Trainer):
             self.model = DistributedDataParallel(self.model)
             self.model, self.optimizer = amp.initialize(self.model, self.optim, opt_level="O0")
             if self.verbose:
-                print("[TNTTrainer]: Train the mode with multiple GPUs: {}.".format(self.cuda_id))
+                logger.info("[TNTTrainer]: Train the mode with multiple GPUs: {}.".format(self.cuda_id))
         else:
             if self.verbose:
-                print("[TNTTrainer]: Train the mode with single device on {}.".format(self.device))
+                logger.info("[TNTTrainer]: Train the mode with single device on {}.".format(self.device))
 
         # record the init learning rate
         if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
@@ -142,17 +143,18 @@ class TNTTrainer(Trainer):
         avg_loss = 0.0
         num_sample = 0
 
-        data_iter = tqdm(
-            enumerate(dataloader),
-            desc="{}_Ep_{}: loss: {:.5f}; avg_loss: {:.5f}".format("train" if training else "eval",
-                                                                    epoch,
-                                                                    0.0,
-                                                                    avg_loss),
-            total=len(dataloader),
-            bar_format="{l_bar}{r_bar}"
-        )
-
-        for i, data in data_iter:
+        # data_iter = tqdm(
+        #     enumerate(dataloader),
+        #     desc="{}_Ep_{}: loss: {:.5f}; avg_loss: {:.5f}".format("train" if training else "eval",
+        #                                                             epoch,
+        #                                                             0.0,
+        #                                                             avg_loss),
+        #     total=len(dataloader),
+        #     bar_format="{l_bar}{r_bar}"
+        # )
+        learning_rate = self.lr
+        # for i, data in data_iter:
+        for i, data in enumerate(dataloader):
             n_graph = len(data)
             data = self.data_to_device(data)
 
@@ -178,7 +180,8 @@ class TNTTrainer(Trainer):
                                 loss_dict["traj_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
                     self.write_log("Loss/Score_Loss",
                                 loss_dict["score_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
-
+                    self.write_log("Loss/Aux_Loss",
+                                loss_dict["aux_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
             else:
                 with torch.no_grad():
                     loss, loss_dict = self.compute_loss(data)
@@ -190,14 +193,21 @@ class TNTTrainer(Trainer):
             num_sample += n_graph
             avg_loss += loss.detach().item()
 
-            # print log info
-            desc_str = "[Info: {}_Epoch_{}: Device_{}: loss: {:.5f}; avg_loss: {:.5f}]".format(
-                "train" if training else "eval",
-                epoch,
-                self.cuda_id,
-                loss.detach().item() / n_graph,
-                avg_loss / num_sample)
-            data_iter.set_description(desc=desc_str, refresh=True)
+            if training and i % self.log_freq == 0:
+                # print log info
+                desc_str = "Epoch-[{}], iter-[{}/{}]: loss: {:.2f}, avg_loss: {:.2f}, target_cls_loss: {:.2f}, target_offset_loss: {:.2f}, traj_loss: {:.2f}, score_loss: {:.2f}, aux_loss: {:.2f}, lr: {}".format(
+                    epoch, i, len(dataloader),
+                    loss.detach().item() / n_graph,
+                    avg_loss / num_sample,
+                    loss_dict["tar_cls_loss"].detach().item() / n_graph,
+                    loss_dict["tar_offset_loss"].detach().item() / n_graph,
+                    loss_dict["traj_loss"].detach().item() / n_graph,
+                    loss_dict["score_loss"].detach().item() / n_graph,
+                    loss_dict["aux_loss"].detach().item() / n_graph,
+                    learning_rate
+                )
+                # data_iter.set_description(desc=desc_str, refresh=True)
+                logger.info(desc_str)
 
         if training:
             if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
@@ -214,6 +224,17 @@ class TNTTrainer(Trainer):
             self.write_log("Eval/minADE", metric["minADE"], epoch)
             self.write_log("Eval/minFDE", metric["minFDE"], epoch)
             self.write_log("Eval/MR", metric["MR"], epoch)
+
+            desc_str = "Validation-[{}]: loss: {:.2f}, min_eval_loss: {:.2f}, minADE: {:.2f}, minFDE: {:.2f}, MR: {:.2f}\n".format(
+                        epoch,
+                        cur_loss,
+                        self.min_eval_loss,
+                        metric["minADE"],
+                        metric["minFDE"],
+                        metric["MR"],
+                    )
+            # data_iter.set_description(desc=desc_str, refresh=True)
+            logger.info(desc_str)
 
         return avg_loss / num_sample
 
@@ -267,8 +288,14 @@ class TNTTrainer(Trainer):
                     if convert_coordinate:
                         rot = data[batch_id]["rot"]
                         orig = data[batch_id]["orig"]
-                        pred = self.convert_coord(out[batch_id].squeeze().cpu().numpy(), orig, rot)
-                        forecasted_trajectories[seq_id] = pred[np.newaxis, :]
+
+                        # pred = self.convert_coord(out[batch_id].squeeze().cpu().numpy(), orig, rot)
+                        # forecasted_trajectories[seq_id] = pred[np.newaxis, :]
+
+                        forecasted_trajectories[seq_id] = [self.convert_coord(pred_y_k, orig, rot)
+                                                        if convert_coordinate else pred_y_k
+                                                        for pred_y_k in out[batch_id].squeeze().cpu().numpy()]
+
                         gt = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
                         gt_trajectories[seq_id] = self.convert_coord(gt, orig, rot)
                         forecasted_probabilities[seq_id] = traj_prob[batch_id]
@@ -287,7 +314,7 @@ class TNTTrainer(Trainer):
                 miss_threshold,
                 forecasted_probabilities
             )
-            print("[TNTTrainer]: The test result: {};".format(metric_results))
+            logger.info("[TNTTrainer]: The test result: {}".format(metric_results))
             if save_pred:
                 with open(self.save_folder + "/result.txt", "a") as fff:
                     fff.write(str(metric_results))
