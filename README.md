@@ -1,4 +1,4 @@
-# A Python and Pytorch Re-Implementation of TNT & VectorNet on Custom dataset
+# A Pytorch Re-Implementation of TNT & VectorNet on Custom dataset with TensorRT deploy
 
 Paper:
 [TNT: Target-driveN Trajectory Prediction](https://arxiv.org/abs/2008.08294)
