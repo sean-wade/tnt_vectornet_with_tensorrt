@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 13:57:46
+LastEditTime: 2023-04-14 13:59:14
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -341,9 +341,9 @@ if __name__ == "__main__":
                         collate_fn=collate_list, 
                         with_cuda=True, 
                         cuda_device=0, 
-                        batch_size=64,
-                        save_folder="./work_dir/tnt/",
-                        lr=0.02,
+                        batch_size=128,
+                        save_folder="./work_dir/tnt2/",
+                        lr=0.01,
                         weight_decay=0.02,
                         warmup_epoch=20,
                         lr_update_freq=20,
