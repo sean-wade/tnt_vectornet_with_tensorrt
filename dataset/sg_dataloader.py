@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-09 19:14:44
-FilePath: /vectornet/dataset/sg_dataloader.py
+LastEditTime: 2023-04-13 10:53:16
+FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -63,12 +63,13 @@ class SGTrajDataset(Dataset):
 
 
     def extract_data(self, idx):
-        raw_data = pickle.load(open(self.data_paths[idx], "rb"))
-        return raw_data
+        with open(self.data_paths[idx], "rb") as ppp:
+            raw_data = pickle.load(ppp)
+            return raw_data
 
 
 if __name__ == '__main__':
-    dataset = SGTrajDataset(data_root = '/mnt/data/SGTrain/rosbag/train_feature', in_mem=True)
+    dataset = SGTrajDataset(data_root = '/mnt/data/SGTrain/rosbag/medium/train/', in_mem=True)
     
     loader = DataLoader(dataset=dataset, batch_size=2, shuffle=False, collate_fn=collate_list)
 

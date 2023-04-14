@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-10 16:26:19
-FilePath: /vectornet/model/vectornet.py
+LastEditTime: 2023-04-12 19:26:25
+FilePath: /my_vectornet_github/model/vectornet.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -12,7 +12,6 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.data import DataLoader, DataListLoader, Batch, Data
 
 # from core.model.layers.global_graph import GlobalGraph, SelfAttentionFCLayer
 from model.layers.global_graph import GlobalGraph
@@ -65,27 +64,36 @@ class VectorNet(nn.Module):
         args:
             data (Data): list(batch_data: dict)
         """
-        if self.training:
-            batch_preds = []
-            batch_global_feat, batch_aux_out, batch_aux_gt = self.backbone(data)
-            for global_feat in batch_global_feat:
-                target_feat = global_feat[:, 0]
-                pred = self.traj_pred_mlp(target_feat)
-                batch_preds.append(pred)
+        batch_preds = []
+        batch_global_feat, batch_aux_out, batch_aux_gt = self.backbone(data)
+        for global_feat in batch_global_feat:
+            target_feat = global_feat[:, 0]
+            pred = self.traj_pred_mlp(target_feat)
+            batch_preds.append(pred)
 
-            return {"pred": batch_preds, "aux_out" : batch_aux_out, "aux_gt" : batch_aux_gt}
-        else:
-            batch_preds = []
-            batch_global_feat = self.backbone(data)
-            for global_feat in batch_global_feat:
-                target_feat = global_feat[:, 0]
-                pred = self.traj_pred_mlp(target_feat)
-                batch_preds.append(pred)
-            return batch_preds
+        return {"pred": batch_preds, "aux_out" : batch_aux_out, "aux_gt" : batch_aux_gt}
+
+        # if self.training:
+        #     batch_preds = []
+        #     batch_global_feat, batch_aux_out, batch_aux_gt = self.backbone(data)
+        #     for global_feat in batch_global_feat:
+        #         target_feat = global_feat[:, 0]
+        #         pred = self.traj_pred_mlp(target_feat)
+        #         batch_preds.append(pred)
+
+        #     return {"pred": batch_preds, "aux_out" : batch_aux_out, "aux_gt" : batch_aux_gt}
+        # else:
+        #     batch_preds = []
+        #     batch_global_feat = self.backbone(data)
+        #     for global_feat in batch_global_feat:
+        #         target_feat = global_feat[:, 0]
+        #         pred = self.traj_pred_mlp(target_feat)
+        #         batch_preds.append(pred)
+        #     return batch_preds
 
     def inference(self, data):
         batch_preds = self.forward(data)
-        batch_pred_traj = [pred.view(self.k, self.horizon, 2).cumsum(1) for pred in batch_preds]
+        batch_pred_traj = [pred.view(self.k, self.horizon, 2).cumsum(1) for pred in batch_preds["pred"]]
         return batch_pred_traj
 
 

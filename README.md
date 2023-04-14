@@ -63,32 +63,7 @@ On my private dataset, the metrics are:
 Organize the inference computing pipeline as follows:
 ![](docs/VectorNet计算图.png)
 
-### 2. Libtorch deploy
-
-> **ATTENTION**: Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
-
-a. Export jit traced module.
-
-```
-python tools/export/vectornet_export_v2.py
-```
-
-b. Compile cpp code.
-
-```
-cd tools/export/cpp_libtorch
-mkdir build && cd build
-cmake ..
-make
-```
-
-c. Excute
-
-```
-./vectornet ../../models/traced_vectornet.pt
-```
-
-### 3. TRT deploy
+### 2. TRT deploy
 
 Details can be found in tensorrt_deploy directory.
 
@@ -152,3 +127,29 @@ Details can be found in tensorrt_deploy directory.
 - Speed Test
 
 ![](docs/time.jpg)
+
+### 3. Libtorch deploy
+
+> **ABANDONED!!!**
+> Only test on libtorch-cpu(version must > 1.12.0), average 0.4 ms/forward.
+
+a. Export jit traced module.
+
+```
+python assets/tools/export/vectornet_export_v2.py
+```
+
+b. Compile cpp code.
+
+```
+cd assets/tools/export/cpp_libtorch
+mkdir build && cd build
+cmake ..
+make
+```
+
+c. Excute
+
+```
+./vectornet ../../models/traced_vectornet.pt
+```

@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 10:44:57
-FilePath: /my_vectornet_github/trainer/vectornet_trainer.py
+LastEditTime: 2023-04-14 13:57:46
+FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -24,13 +24,13 @@ except:
 from trainer.basic_trainer import Trainer
 from trainer.optim_schedule import ScheduledOptim
 from dataset.util.vis_utils_v2 import Visualizer
-from model.vectornet import VectorNet
-from model.loss import VectorLoss
+from model.tnt import TNT
+from model.loss import TNTLoss
 
 
-class VectorNetTrainer(Trainer):
+class TNTTrainer(Trainer):
     """
-    VectorNetTrainer, train the vectornet with specified hyperparameters and configurations
+    TNT Trainer, train the TNT with specified hyperparameters and configurations
     """
     def __init__(self,
                  trainset,
@@ -57,23 +57,7 @@ class VectorNetTrainer(Trainer):
                  ckpt_path: str = None,
                  verbose: bool = True
                  ):
-        """
-        trainer class for vectornet
-            :param train_loader: see parent class
-            :param eval_loader: see parent class
-            :param test_loader: see parent class
-            :param lr: see parent class
-            :param betas: see parent class
-            :param weight_decay: see parent class
-            :param warmup_steps: see parent class
-            :param with_cuda: see parent class
-            :param multi_gpu: see parent class
-            :param log_freq: see parent class
-            :param model_path: str, the path to a trained model
-            :param ckpt_path: str, the path to a stored checkpoint to be resumed
-            :param verbose: see parent class
-        """
-        super(VectorNetTrainer, self).__init__(
+        super(TNTTrainer, self).__init__(
             trainset=trainset,
             evalset=evalset,
             testset=testset,
@@ -97,16 +81,29 @@ class VectorNetTrainer(Trainer):
         self.horizon = horizon
         self.aux_loss = aux_loss
 
-        model_name = VectorNet
-        # model_name = OriginalVectorNet
+        self.lambda1 = 0.1
+        self.lambda2 = 1.0
+        self.lambda3 = 0.1
+
+        model_name = TNT
         self.model = model_name(
-            self.trainset.num_features,
+            self.trainset.num_features if hasattr(self.trainset, 'num_features') else self.testset.num_features,
             self.horizon,
             num_global_graph_layer=num_global_graph_layer,
             with_aux=aux_loss,
             device=self.device
         )
-        self.criterion = VectorLoss(aux_loss=self.aux_loss, reduction="sum")
+        self.criterion = TNTLoss(
+            self.lambda1, 
+            self.lambda2, 
+            self.lambda3,
+            self.model.m, 
+            self.model.k, 
+            temper=0.01,
+            aux_loss=self.aux_loss,
+            reduction='sum',
+            device=self.device
+        )
 
         # init optimizer
         self.optim = AdamW(self.model.parameters(), lr=self.lr, betas=self.betas, weight_decay=self.weight_decay)
@@ -130,10 +127,10 @@ class VectorNetTrainer(Trainer):
             self.model = DistributedDataParallel(self.model)
             self.model, self.optimizer = amp.initialize(self.model, self.optim, opt_level="O0")
             if self.verbose:
-                print("[VectornetTrainer]: Train the mode with multiple GPUs: {}.".format(self.cuda_id))
+                print("[TNTTrainer]: Train the mode with multiple GPUs: {}.".format(self.cuda_id))
         else:
             if self.verbose:
-                print("[VectornetTrainer]: Train the mode with single device on {}.".format(self.device))
+                print("[TNTTrainer]: Train the mode with single device on {}.".format(self.device))
 
         # record the init learning rate
         if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
@@ -161,7 +158,7 @@ class VectorNetTrainer(Trainer):
 
             if training:
                 self.optm_schedule.zero_grad()
-                loss = self.compute_loss(data)
+                loss, loss_dict = self.compute_loss(data)
 
                 if self.multi_gpu:
                     with amp.scale_loss(loss, self.optim) as scaled_loss:
@@ -170,25 +167,35 @@ class VectorNetTrainer(Trainer):
                     loss.backward()
 
                 self.optim.step()
+
                 if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
-                    self.write_log("Train Loss", loss.detach().item() / n_graph, i + epoch * len(dataloader))
+                    self.write_log("Loss/Train_Loss", loss.detach().item() / n_graph, i + epoch * len(dataloader))
+                    self.write_log("Loss/Target_Cls_Loss",
+                                loss_dict["tar_cls_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
+                    self.write_log("Loss/Target_Offset_Loss",
+                                loss_dict["tar_offset_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
+                    self.write_log("Loss/Traj_Loss",
+                                loss_dict["traj_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
+                    self.write_log("Loss/Score_Loss",
+                                loss_dict["score_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
 
             else:
                 with torch.no_grad():
-                    loss = self.compute_loss(data)
+                    loss, loss_dict = self.compute_loss(data)
 
+                    # writing loss
                     if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
-                        self.write_log("Eval/Eval Loss", loss.item() / n_graph, i + epoch * len(dataloader))
+                        self.write_log("Eval/Eval_Loss", loss.item() / n_graph, i + epoch * len(dataloader))
 
             num_sample += n_graph
             avg_loss += loss.detach().item()
 
             # print log info
-            desc_str = "[Info: Device_{}: {}_Ep_{}: loss: {:.5f}; avg_loss: {:.5f}]".format(
-                self.cuda_id,
+            desc_str = "[Info: {}_Epoch_{}: Device_{}: loss: {:.5f}; avg_loss: {:.5f}]".format(
                 "train" if training else "eval",
                 epoch,
-                loss.item() / n_graph,
+                self.cuda_id,
+                loss.detach().item() / n_graph,
                 avg_loss / num_sample)
             data_iter.set_description(desc=desc_str, refresh=True)
 
@@ -210,29 +217,14 @@ class VectorNetTrainer(Trainer):
 
         return avg_loss / num_sample
 
-
     def compute_loss(self, data):
         out = self.model(data)
-        pred = torch.cat(out["pred"])
-        gt = torch.cat([dd["y"] for dd in data]).reshape(len(data), -1)
-        aux_gt = torch.cat(out["aux_gt"]) if out["aux_gt"] else None
-        aux_out = torch.cat(out["aux_out"]) if out["aux_out"] else None
-        return self.criterion(pred, gt, aux_out, aux_gt)
-
-        # if self.model.training:
-        #     # training
-        #     out = self.model(data)
-        #     pred = torch.cat(out["pred"])
-        #     gt = torch.cat([dd["y"] for dd in data]).reshape(len(data), -1)
-        #     aux_gt = torch.cat(out["aux_gt"]) if len(out["aux_gt"]) > 0 else None
-        #     aux_out = torch.cat(out["aux_out"]) if len(out["aux_out"]) > 0 else None
-        #     return self.criterion(pred, gt, aux_out, aux_gt)
-        # else:
-        #     out = self.model(data)
-        #     pred = torch.cat(out)
-        #     gt = torch.cat([dd["y"] for dd in data]).reshape(len(data), -1)
-        #     return self.criterion(pred, gt)
-
+        gt = {
+                "target_prob": [dd["candidate_gt"] for dd in data],
+                "offset": [dd["offset_gt"] for dd in data],
+                "y": [dd["y"].view(self.horizon, 2).cumsum(axis=0).view(1,-1) for dd in data]
+        }
+        return self.criterion(out["pred"], gt, out["aux_out"], out["aux_gt"])
 
     def test(self,
              miss_threshold=2.0,
@@ -248,7 +240,8 @@ class VectorNetTrainer(Trainer):
             :param save_pred: store the prediction or not, store in the Argoverse benchmark format
         """
         self.model.eval()
-        forecasted_trajectories, gt_trajectories = {}, {}
+        forecasted_trajectories, gt_trajectories, forecasted_probabilities = {}, {}, {}
+        k = self.model.k
         horizon = self.model.horizon
 
         with torch.no_grad():
@@ -262,6 +255,12 @@ class VectorNetTrainer(Trainer):
                 else:
                     out = self.model.inference(data)
 
+                if len(out) == 2:
+                    out, traj_prob = out
+                    traj_prob = [pp.cpu().numpy().tolist() for pp in traj_prob]
+                else:
+                    traj_prob = [1.0] * 6
+
                 # record the prediction and ground truth
                 for batch_id in range(batch_size):
                     seq_id = data[batch_id]["seq_id"]
@@ -272,20 +271,23 @@ class VectorNetTrainer(Trainer):
                         forecasted_trajectories[seq_id] = pred[np.newaxis, :]
                         gt = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
                         gt_trajectories[seq_id] = self.convert_coord(gt, orig, rot)
+                        forecasted_probabilities[seq_id] = traj_prob[batch_id]
                     else:
                         forecasted_trajectories[seq_id] = out[batch_id].cpu().numpy()
                         gt_trajectories[seq_id] = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
+                        forecasted_probabilities[seq_id] = traj_prob[batch_id]
 
         # compute the metric
         if compute_metric:
             metric_results = get_displacement_errors_and_miss_rate(
                 forecasted_trajectories,
                 gt_trajectories,
-                1,
+                k,
                 horizon,
-                miss_threshold
+                miss_threshold,
+                forecasted_probabilities
             )
-            print("[VectornetTrainer]: The test result: {};".format(metric_results))
+            print("[TNTTrainer]: The test result: {};".format(metric_results))
             if save_pred:
                 with open(self.save_folder + "/result.txt", "a") as fff:
                     fff.write(str(metric_results))
@@ -307,9 +309,9 @@ class VectorNetTrainer(Trainer):
             self.plot_loader = self.loader(self.testset, batch_size=1, num_workers=2, collate_fn=collate_list)
             for data in tqdm(self.plot_loader, desc="Ploting and saving..."):
                 seq_id = data[0]["seq_id"]
-                vis.draw_once(data[0], forecasted_trajectories[seq_id], gt_trajectories[seq_id])
+                vis.draw_once(data[0], forecasted_trajectories[seq_id], gt_trajectories[seq_id], forecasted_probabilities[seq_id])
                 if save_pred:
-                    png_path = self.save_folder + "/fig/vectornet_" + str(seq_id) + ".png"
+                    png_path = self.save_folder + "/fig/tnt_" + str(seq_id) + ".png"
                     plt.savefig(png_path)
                     plt.close()
                 else:
@@ -322,29 +324,35 @@ class VectorNetTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    from model.vectornet import VectorNet
+    SEED = 0
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    
     from dataset.sg_dataloader import SGTrajDataset, collate_list
 
     device = torch.device('cuda:0')
 
-    dataset = SGTrajDataset(data_root='/mnt/data/SGTrain/rosbag/train_feature', in_mem=True)
-    trainer = VectorNetTrainer(trainset=dataset, 
-                                evalset=dataset, 
-                                testset=dataset, 
-                                collate_fn=collate_list, 
-                                with_cuda=True, 
-                                cuda_device=0, 
-                                batch_size=64,
-                                save_folder="./work_dir/vectornet/",
-                                lr=0.005,
-                                weight_decay=0.01,
-                                warmup_epoch=20,
-                                lr_update_freq=20,
-                                lr_decay_rate=0.9,
-                                aux_loss=True,
-                                )
+    train_dataset = SGTrajDataset(data_root='/mnt/data/SGTrain/rosbag/medium/train', in_mem=False)
+    val_dataset = SGTrajDataset(data_root='/mnt/data/SGTrain/rosbag/medium/val', in_mem=False)
+    trainer = TNTTrainer(trainset=train_dataset, 
+                        evalset=val_dataset, 
+                        testset=val_dataset, 
+                        num_workers=4,
+                        collate_fn=collate_list, 
+                        with_cuda=True, 
+                        cuda_device=0, 
+                        batch_size=64,
+                        save_folder="./work_dir/tnt/",
+                        lr=0.02,
+                        weight_decay=0.02,
+                        warmup_epoch=20,
+                        lr_update_freq=20,
+                        lr_decay_rate=0.9,
+                        aux_loss=False,
+                        model_path="work_dir/tnt/best_TNT.pth"
+                        )
 
-    for iter_epoch in range(100):
+    for iter_epoch in range(200):
         trainer.train(iter_epoch)
         trainer.eval(iter_epoch)
 

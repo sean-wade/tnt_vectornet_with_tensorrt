@@ -74,7 +74,7 @@ class VectorNetBackbone(nn.Module):
         if self.training:
             return batch_output, batch_aux_gt, batch_aux_out
         else:
-            return batch_output
+            return batch_output, None, None
 
 
 if __name__ == "__main__":

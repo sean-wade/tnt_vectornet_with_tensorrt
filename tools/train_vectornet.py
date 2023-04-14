@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-10 20:43:31
-FilePath: /vectornet/tools/train_vectornet.py
+LastEditTime: 2023-04-12 19:25:08
+FilePath: /my_vectornet_github/tools/train_vectornet.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -82,7 +82,7 @@ if __name__ == "__main__":
                         help="number of batch_size")
     parser.add_argument("-e", "--n_epoch", type=int, default=500,
                         help="number of epochs")
-    parser.add_argument("-w", "--num_workers", type=int, default=4,
+    parser.add_argument("-w", "--num_workers", type=int, default=0,
                         help="dataloader worker size")
 
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True,

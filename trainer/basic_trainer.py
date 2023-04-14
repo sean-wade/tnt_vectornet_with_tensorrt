@@ -263,11 +263,13 @@ class Trainer(object):
                 self.model.load_state_dict(ckpt["model_state_dict"])
                 self.optim.load_state_dict(ckpt["optimizer_state_dict"])
                 self.min_eval_loss = ckpt["min_eval_loss"]
+                print("Success load checkpoint: ", load_path)
             except:
                 raise Exception("[Trainer]: Error in loading the checkpoint file {}".format(load_path))
         elif mode == 'm':
             try:
                 self.model.load_state_dict(torch.load(load_path, map_location=self.device), strict=False)
+                print("Success load model: ", load_path)
             except:
                 raise Exception("[Trainer]: Error in loading the model file {}".format(load_path))
         else:
@@ -297,7 +299,7 @@ class Trainer(object):
                 data = self.data_to_device(data)
                 batch_size = len(data)
 
-                gt = torch.vstack([dd["y"] for dd in data]).view(batch_size, -1, 2).cumsum(axis=1).cpu().numpy()
+                # gt = torch.vstack([dd["y"] for dd in data]).view(batch_size, -1, 2).cumsum(axis=1).cpu().numpy()
                 # gt = data.y.unsqueeze(1).view(batch_size, -1, 2).cumsum(axis=1).numpy()
 
                 # inference and transform dimension
@@ -305,6 +307,8 @@ class Trainer(object):
                     out = self.model.module.inference(data)
                 else:
                     out = self.model.inference(data)
+                    if len(out) == 2:
+                        out, traj_prob = out
 
                 # record the prediction and ground truth
                 for batch_id in range(batch_size):
