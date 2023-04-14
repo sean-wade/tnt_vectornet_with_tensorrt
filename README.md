@@ -3,6 +3,7 @@
 Paper:
 
 > [TNT: Target-driveN Trajectory Prediction](https://arxiv.org/abs/2008.08294)
+
 > [VectorNet: Encoding HD Maps and Agent Dynamics from Vectorized Representation](https://arxiv.org/abs/2005.04259)
 
 Thanks to this [TNT implemention](https://github.com/Henry1iu/TNT-Trajectory-Prediction)
