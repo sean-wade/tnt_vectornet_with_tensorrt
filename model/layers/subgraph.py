@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-03-23 12:08:01
-FilePath: /vectornet/model/layers/subgraph.py
+LastEditTime: 2023-04-18 14:30:40
+FilePath: /my_vectornet_github/model/layers/subgraph.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -46,6 +46,8 @@ class SubGraph(nn.Module):
 
         x = self.linear(x)
         x = scatter(x, cluster, dim=0, reduce='max')
+        
+        # print("subgraph after norm: \n", F.normalize(x, p=2.0, dim=1))
         
         return F.normalize(x, p=2.0, dim=1)  # L2 normalization
 

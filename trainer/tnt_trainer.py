@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 16:34:05
+LastEditTime: 2023-04-18 14:14:03
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -323,8 +323,10 @@ class TNTTrainer(Trainer):
             os.makedirs(self.save_folder + "/pd/", exist_ok=True)
             os.makedirs(self.save_folder + "/gt/", exist_ok=True)
             for k, v in forecasted_trajectories.items():
-                with open(self.save_folder + "/pd/%s.txt"%k, "w") as fff:
-                    fff.write(str(v[0]))
+                with open(self.save_folder + "/pd/%s.txt"%k, "a") as fff:
+                    for vv in v:
+                        fff.write(str(vv))
+                        fff.write("\n\n")
             for k, v in gt_trajectories.items():
                 with open(self.save_folder + "/gt/%s.txt"%k, "w") as fff:
                     fff.write(str(v))

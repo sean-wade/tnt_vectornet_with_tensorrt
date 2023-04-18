@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 16:43:54
+LastEditTime: 2023-04-14 18:24:02
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-b", "--batch_size", type=int, default=128,
                         help="number of batch_size")
-    parser.add_argument("-e", "--n_epoch", type=int, default=200,
+    parser.add_argument("-e", "--n_epoch", type=int, default=500,
                         help="number of epochs")
     parser.add_argument("-w", "--num_workers", type=int, default=0,
                         help="dataloader worker size")
@@ -95,14 +95,14 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--local_rank", default=0, type=int,
                         help="the default id of gpu")
 
-    parser.add_argument("--log_freq", type=int, default=2,
+    parser.add_argument("--log_freq", type=int, default=5,
                         help="printing loss every n iter: setting n")
     parser.add_argument("--on_memory", type=bool, default=True, help="Loading on memory: true or false")
 
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate of adam")
     parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
                         help="the number of warmup epoch with initial learning rate, after the learning rate decays")
-    parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,
+    parser.add_argument("-luf", "--lr_update_freq", type=int, default=50,
                         help="learning rate decay frequency for lr scheduler")
     parser.add_argument("-ldr", "--lr_decay_rate", type=float, default=0.8, help="lr scheduler decay rate")
 

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 16:40:14
+LastEditTime: 2023-04-18 14:33:38
 FilePath: /my_vectornet_github/model/tnt.py
 LastEditors: zhanghao
 Description: 
@@ -8,7 +8,6 @@ Description:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.data import DataLoader
 
 from model.backbone.vectornet_backbone import VectorNetBackbone
 from model.layers.target_prediction import TargetPred
@@ -125,6 +124,8 @@ class TNT(nn.Module):
         for global_feat, target_candidate in zip(batch_global_feat, batch_candidates):
             target_feat = global_feat[:, 0]
 
+            print("target_feat: \n", target_feat)
+
             # 2. target prob offset generate.
             target_prob, offset = self.target_pred_layer(target_feat, target_candidate)
 
@@ -139,6 +140,9 @@ class TNT(nn.Module):
             # 5. caculate traj scores.
             score = self.traj_score_layer(target_feat, trajs)
 
+            print("trajs: \n", trajs)
+            print("score: \n", score)
+
             traj_final_k, traj_final_k_prob = self.traj_selection(trajs, score)
             traj_final_k_prob = traj_final_k_prob.view(self.k)
             traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
@@ -148,22 +152,12 @@ class TNT(nn.Module):
 
         return batch_trajs, batch_traj_probs
 
-    # todo: determine appropiate threshold
     def traj_selection(self, traj_in, score, threshold=16):
-        """
-        select the top k trajectories according to the score and the distance
-        :param traj_in: candidate trajectories, [batch, M, horizon * 2]
-        :param score: score of the candidate trajectories, [batch, M]
-        :param threshold: float, the threshold for exclude traj prediction
-        :return: [batch_size, k, horizon * 2]
-        """
-        _, order = score.sort(descending=True)
-        traj_pred = torch.cat([traj_in[oo] for oo in order], dim=0).view(self.m, self.horizon * 2)
-        traj_selected = traj_pred[:self.k].clone()                                   # [batch_size, k, horizon * 2]
+        score_descend, order = score.sort(descending=True)
+        traj_pred = traj_in[order]
+        traj_selected = traj_pred[:self.k].clone()
+        traj_prob = score_descend[:6].clone()
 
-        traj_prob = score[:6]
-
-        # check the distance between them, NMS, stop only when enough trajs collected                             # one batch for a time
         traj_cnt = 1
         thres = threshold
         while traj_cnt < self.k:
@@ -171,11 +165,12 @@ class TNT(nn.Module):
                 dis = distance_metric(traj_selected[:traj_cnt], traj_pred[j].unsqueeze(0))
                 if not torch.any(dis < thres):
                     traj_selected[traj_cnt] = traj_pred[j].clone()
-                    traj_prob[traj_cnt] = score[j].clone()
+                    traj_prob[traj_cnt] = score_descend[j]
                     traj_cnt += 1
                 if traj_cnt >= self.k:
                     break
-            thres /= 2.0
+            else:
+                thres /= 2.0
 
         return traj_selected, traj_prob
 

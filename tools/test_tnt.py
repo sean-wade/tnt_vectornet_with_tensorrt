@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 16:43:09
+LastEditTime: 2023-04-18 14:06:55
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -52,9 +52,9 @@ def test(args):
 
     trainer.test(miss_threshold=2.0, 
                 save_pred=args.save_pred, 
-                convert_coordinate=True,
+                convert_coordinate=False,
                 compute_metric=True,
-                plot=args.plot
+                plot=not args.noplot
                 )
 
 
@@ -73,12 +73,12 @@ if __name__ == "__main__":
                         # default="checkpoint_iter26.ckpt",
                         help="resume a checkpoint for fine-tune")
     parser.add_argument("-rm", "--resume_model", type=str,
-                        default="work_dir/tnt/04_14_16_00/best_TNT.pth",
+                        default="weights/sg_best_TNT.pth",
                         help="resume a model state for fine-tune")
 
     parser.add_argument("-sd", "--save_dir", type=str, default="work_dir/test/"),
     parser.add_argument("-sv", "--save_pred", action="store_true", default=True)
-    parser.add_argument("-pl", "--plot", action="store_true", default=True)
+    parser.add_argument("-npl", "--noplot", action="store_true", default=False)
     parser.add_argument("--on_memory", type=bool, default=False, help="Loading on memory: true or false")
     args = parser.parse_args()
     test(args)

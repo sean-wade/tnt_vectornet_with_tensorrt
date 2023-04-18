@@ -54,6 +54,7 @@ class VectorNetBackbone(nn.Module):
             valid_len = batch_data["traj_num"] + batch_data["lane_num"]
 
             sub_graph_out = self.subgraph(batch_data["x"], batch_data["cluster"].long())
+            # print("sub_graph_out: \n", sub_graph_out)
 
             if self.training and self.with_aux:
                 mask_polyline_indices = torch.randint(1, valid_len-2, (1,))
