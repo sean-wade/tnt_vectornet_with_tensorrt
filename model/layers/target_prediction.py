@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 11:48:53
+LastEditTime: 2023-04-19 19:54:06
 FilePath: /my_vectornet_github/model/layers/target_prediction.py
 LastEditors: zhanghao
 Description: 
@@ -56,9 +56,10 @@ class TargetPred(nn.Module):
 
         # compute probability for each candidate
         prob_tensor = self.prob_mlp(feat_in_repeat)
-        tar_candit_prob = F.softmax(prob_tensor, dim=0)                                    # [batch_size, n_tar]
-        tar_offset_mean = self.mean_mlp(feat_in_repeat)                                         # [batch_size, n_tar, 2]
+        tar_candit_prob = F.softmax(prob_tensor, dim=0)
+        tar_offset_mean = self.mean_mlp(feat_in_repeat)
 
+        # print("tar_offset_mean: \n", tar_offset_mean.flatten())
         return tar_candit_prob, tar_offset_mean
 
     def inference(self,

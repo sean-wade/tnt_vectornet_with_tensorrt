@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-18 14:45:41
+LastEditTime: 2023-04-21 14:59:51
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -78,23 +78,30 @@ class TNTExport(nn.Module):
     def forward(self, x, cluster, id_embedding, target_candidate):
         # print("x: \n", x)
         # print("cluster: \n", cluster)
+        # print("id_embedding: \n", id_embedding)
+
         sub_graph_out = self.subgraph(x, cluster)
         # print("sub_graph_out: \n", sub_graph_out)
 
         x = torch.cat([sub_graph_out, id_embedding], dim=1).unsqueeze(0)
         global_feat = self.global_graph(x, valid_lens=None)
-
         target_feat = global_feat[:, 0]
-        # print("target_feat: \n", target_feat)
+
         target_prob, offset = self.target_pred_layer(target_feat, target_candidate)
 
         _, indices = target_prob.topk(self.m, dim=0)
         target_pred_se, offset_pred_se = target_candidate[indices], offset[indices]
         target_loc_se = (target_pred_se + offset_pred_se).view(self.m, 2)
 
+        # print("target_loc_se: \n", target_loc_se)
+
         trajs = self.motion_estimator(target_feat, target_loc_se)
 
+        print("trajs: \n", trajs.flatten()[-50:])
+
         scores = self.traj_score_layer(target_feat, trajs)
+
+        # print("scores: \n", scores.flatten())
 
         return trajs, scores
 
@@ -150,12 +157,15 @@ if __name__ == "__main__":
     model = load_tnt(ckpt)
     # print(model)
 
-    test_pkl = "tensorrt_deploy/vectornet_trt/src/data/data_seq_40050_features.pkl"
+    test_pkl = "tensorrt_deploy/vectornet_trt/cpp/data/data_seq_40050_features.pkl"
     test_data = pickle.load(open(test_pkl, "rb"))
     x = test_data["x"]
     cluster = test_data["cluster"].long()
     id_embedding = test_data["identifier"]
     target_candidate = test_data['candidate']
+
+    # import numpy as np
+    # np.savetxt("candidate.txt", target_candidate.flatten().reshape(1,-1).numpy(), fmt="%.1f", delimiter=",")
 
     model.cuda()
     with torch.no_grad():
@@ -163,9 +173,9 @@ if __name__ == "__main__":
                               cluster.cuda(), 
                               id_embedding.cuda(), 
                               target_candidate.cuda())
-        print(trajs)
+        # print(trajs)
         # print(trajs.shape)
-        print(scores)
+        # print(scores)
         # print(scores.shape)
 
     save_weights(model, wts)
