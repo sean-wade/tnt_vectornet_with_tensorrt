@@ -41,7 +41,7 @@ std::map<std::string, Weights> loadWeights(const std::string file)
             // Change hex values to uint32 (for higher values)
             input >> std::hex >> val[x];
         }
-        std::cout << w_name << "\n";
+        // std::cout << w_name << "\n";
         wt.values = val;
         wt.count  = size;
 
@@ -93,7 +93,7 @@ bool TNT::Init(const TNTOptions& options)
     return true;
 }
 
-bool TNT::Process(TrajfeatureInputData& input_data, TrajPredictData& pred_data)
+bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTraj& pred_data)
 {
     void* buffers[6];
 
@@ -177,9 +177,15 @@ bool TNT::Process(TrajfeatureInputData& input_data, TrajPredictData& pred_data)
     cudaFree(buffers[outputIndex1]);
     cudaFree(buffers[outputIndex2]);
 
-    for (int i = 0; i < TNT_TARGET_SELECT_NUM * TNT_HORIZON * 2; i++)
+    for (int i = 0; i < TNT_TARGET_SELECT_NUM; i++)
     {
-        pred_data.predict_points.push_back(traj_pred[i]);
+        pred_data.scores.push_back(traj_score[i]);
+        std::vector<float> traj;
+        for (int j = 0; j < TNT_HORIZON * 2; j++)
+        {
+            traj.push_back(traj_pred[i * TNT_HORIZON * 2 + j]);
+        }
+        pred_data.pred_trajs.push_back(traj);
     }
     return true;
 }

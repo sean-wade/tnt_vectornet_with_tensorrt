@@ -381,22 +381,23 @@ int main()
     tnt_net.Init(options);
 
     // For precision compare.
-    TrajPredictData pred_data;
+    TNTPredictTraj pred_data;
     tnt_net.Process(input_data, pred_data);
-    for (int i = 0; i < pred_data.predict_points.size(); i++)
+    for (int i = 0; i < pred_data.scores.size(); i++)
     {
-        // if (i % 2 != 0)
-        //     printf("%f\n", pred_data.predict_points[i]);
-        // else
-        //     printf("%f,", pred_data.predict_points[i]);
-        printf("%f,", pred_data.predict_points[i]);
+        printf("%f: ", pred_data.scores[i]);
+        for (int j = 0; j < pred_data.pred_trajs[i].size(); j++)
+        {
+            printf("%f,", pred_data.pred_trajs[i][j]);
+        }
+        printf("\n\n");
     }
 
     // For timing, because first time is slow, doesnot count.
     auto start = std::chrono::system_clock::now();
     for (int k = 0; k < 1000; k++)
     {
-        TrajPredictData pred_data2;
+        TNTPredictTraj pred_data2;
         tnt_net.Process(input_data, pred_data2);
     }
     auto end = std::chrono::system_clock::now();

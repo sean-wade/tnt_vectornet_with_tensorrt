@@ -18,9 +18,10 @@
 using namespace nvinfer1;
 static Logger gLogger;
 
-struct TrajPredictData
+struct TNTPredictTraj
 {
-    std::vector<float> predict_points;
+    std::vector<std::vector<float>> pred_trajs;
+    std::vector<float>              scores;
 };
 
 struct TrajfeatureInputData
@@ -68,7 +69,7 @@ public:
      * @param {TrajfeatureInputData&} input_data
      * @return {*}
      */
-    bool Process(TrajfeatureInputData& input_data, TrajPredictData& pred_data);
+    bool Process(TrajfeatureInputData& input_data, TNTPredictTraj& pred_data);
 
 private:
     bool createTNTEngine();

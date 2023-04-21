@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-21 14:59:51
+LastEditTime: 2023-04-21 17:39:54
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -97,7 +97,7 @@ class TNTExport(nn.Module):
 
         trajs = self.motion_estimator(target_feat, target_loc_se)
 
-        print("trajs: \n", trajs.flatten()[-50:])
+        # print("trajs: \n", trajs.flatten()[-50:])
 
         scores = self.traj_score_layer(target_feat, trajs)
 
@@ -177,6 +177,9 @@ if __name__ == "__main__":
         # print(trajs.shape)
         # print(scores)
         # print(scores.shape)
+
+        for ss, tj in zip(scores, trajs):
+            print(float(ss), ": ", tj)
 
     save_weights(model, wts)
 
