@@ -381,28 +381,22 @@ int main()
     tnt_net.Init(options);
 
     // For precision compare.
-    TNTPredictTraj pred_data;
+    TNTPredictTrajs pred_data;
     tnt_net.Process(input_data, pred_data);
-    for (int i = 0; i < pred_data.scores.size(); i++)
-    {
-        printf("%f: ", pred_data.scores[i]);
-        for (int j = 0; j < pred_data.pred_trajs[i].size(); j++)
-        {
-            printf("%f,", pred_data.pred_trajs[i][j]);
-        }
-        printf("\n\n");
-    }
+    pred_data.print();
 
     // For timing, because first time is slow, doesnot count.
-    auto start = std::chrono::system_clock::now();
-    for (int k = 0; k < 1000; k++)
+    int  loop_time = 1000;
+    auto start     = std::chrono::system_clock::now();
+    for (int k = 0; k < loop_time; k++)
     {
-        TNTPredictTraj pred_data2;
+        TNTPredictTrajs pred_data2;
         tnt_net.Process(input_data, pred_data2);
     }
-    auto end = std::chrono::system_clock::now();
-    std::cout << "\n[INFO]: Time taken by execution: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+    auto  end   = std::chrono::system_clock::now();
+    float mills = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "\n[INFO]: Time taken by execution: [" << mills << "] ms, "
+              << "average per excute time: [" << mills / loop_time << "] ms." << std::endl;
 
     return 0;
 }

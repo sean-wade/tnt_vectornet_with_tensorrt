@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-21 17:39:54
+LastEditTime: 2023-04-23 14:44:51
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -173,12 +173,12 @@ if __name__ == "__main__":
                               cluster.cuda(), 
                               id_embedding.cuda(), 
                               target_candidate.cuda())
-        # print(trajs)
+        # print(trajs[:2])
         # print(trajs.shape)
-        # print(scores)
+        # print(scores[:2])
         # print(scores.shape)
 
-        for ss, tj in zip(scores, trajs):
+        for ss, tj in zip(scores[:3], trajs[:3]):
             print(float(ss), ": ", tj)
 
     save_weights(model, wts)

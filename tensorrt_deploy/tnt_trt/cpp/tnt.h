@@ -5,23 +5,34 @@
  * @LastEditors: zhanghao
  * @Description:
  */
-#include <map>
-#include <vector>
-#include <fstream>
-#include <chrono>
-#include <iostream>
-#include "NvInfer.h"
-#include "cuda_runtime_api.h"
-#include "logging.h"
 #include "layer.h"
+#include "utils.h"
 
 using namespace nvinfer1;
 static Logger gLogger;
 
-struct TNTPredictTraj
+struct TrajData
 {
-    std::vector<std::vector<float>> pred_trajs;
-    std::vector<float>              scores;
+    float pred_traj[TNT_HORIZON * 2];
+    float score;
+};
+
+struct TNTPredictTrajs
+{
+    std::vector<TrajData> pred_trajs;
+
+    void print()
+    {
+        for (int i = 0; i < pred_trajs.size(); i++)
+        {
+            printf("%f: ", pred_trajs[i].score);
+            for (int j = 0; j < TNT_HORIZON * 2; j++)
+            {
+                printf("%f, ", pred_trajs[i].pred_traj[j]);
+            }
+            printf("\n\n");
+        }
+    }
 };
 
 struct TrajfeatureInputData
@@ -69,7 +80,7 @@ public:
      * @param {TrajfeatureInputData&} input_data
      * @return {*}
      */
-    bool Process(TrajfeatureInputData& input_data, TNTPredictTraj& pred_data);
+    bool Process(TrajfeatureInputData& input_data, TNTPredictTrajs& pred_data);
 
 private:
     bool createTNTEngine();

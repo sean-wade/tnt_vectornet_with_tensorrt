@@ -36,7 +36,7 @@ file(GLOB_RECURSE PLUGIN_CU_SOURCES ${PROJECT_SOURCE_DIR}/Plugin/*.cu)
 cuda_add_library(mytrt_plugin SHARED ${PLUGIN_CU_SOURCES} ${PLUGIN_SOURCES})
 target_link_libraries(mytrt_plugin nvinfer)
 
-add_executable(test_tnt test.cpp tnt.cpp)
+add_executable(test_tnt test.cpp tnt.cpp utils.cpp)
 
 target_link_libraries(test_tnt ${CUDA_LIBRARIES} nvinfer mytrt_plugin)
 add_definitions(-O2 -pthread)

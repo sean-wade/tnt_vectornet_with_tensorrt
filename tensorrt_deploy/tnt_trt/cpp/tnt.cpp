@@ -5,52 +5,9 @@
  * @LastEditors: zhanghao
  * @Description:
  */
-#include <unistd.h>
 #include "tnt.h"
 
 using namespace nvinfer1;
-
-std::map<std::string, Weights> loadWeights(const std::string file)
-{
-    std::cout << "[INFO]: Loading weights: " << file << std::endl;
-    std::map<std::string, Weights> weightMap;
-
-    // Open Weight file
-    std::ifstream input(file);
-    assert(input.is_open() && "[ERROR]: Unable to load weight file...");
-
-    // Read number of weights
-    int32_t count;
-    input >> count;
-    assert(count > 0 && "Invalid weight map file.");
-
-    // Loop through number of line, actually the number of weights & biases
-    while (count--)
-    {
-        // TensorRT weights
-        Weights  wt{DataType::kFLOAT, nullptr, 0};
-        uint32_t size;
-        // Read name and type of weights
-        std::string w_name;
-        input >> w_name >> std::dec >> size;
-        wt.type = DataType::kFLOAT;
-
-        uint32_t* val = reinterpret_cast<uint32_t*>(malloc(sizeof(val) * size));
-        for (uint32_t x = 0, y = size; x < y; ++x)
-        {
-            // Change hex values to uint32 (for higher values)
-            input >> std::hex >> val[x];
-        }
-        // std::cout << w_name << "\n";
-        wt.values = val;
-        wt.count  = size;
-
-        // Add weight values against its name (key)
-        weightMap[w_name] = wt;
-    }
-    std::cout << "[INFO]: Loading weights done." << std::endl;
-    return weightMap;
-}
 
 bool TNT::Init(const TNTOptions& options)
 {
@@ -93,7 +50,7 @@ bool TNT::Init(const TNTOptions& options)
     return true;
 }
 
-bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTraj& pred_data)
+bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTrajs& pred_data)
 {
     void* buffers[6];
 
@@ -177,16 +134,19 @@ bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTraj& pred_data)
     cudaFree(buffers[outputIndex1]);
     cudaFree(buffers[outputIndex2]);
 
-    for (int i = 0; i < TNT_TARGET_SELECT_NUM; i++)
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::vector<int> select_index;
+    postProcessCPU(traj_score, traj_pred, select_index);
+
+    for (auto k : select_index)
     {
-        pred_data.scores.push_back(traj_score[i]);
-        std::vector<float> traj;
-        for (int j = 0; j < TNT_HORIZON * 2; j++)
-        {
-            traj.push_back(traj_pred[i * TNT_HORIZON * 2 + j]);
-        }
-        pred_data.pred_trajs.push_back(traj);
+        TrajData traj_data;
+        traj_data.score = traj_score[k];
+        memcpy(traj_data.pred_traj, traj_pred + k * TNT_HORIZON * 2, sizeof(float) * TNT_HORIZON * 2);
+        pred_data.pred_trajs.emplace_back(traj_data);
     }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     return true;
 }
 

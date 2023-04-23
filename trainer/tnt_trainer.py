@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-18 14:14:03
+LastEditTime: 2023-04-23 16:03:32
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -303,6 +303,9 @@ class TNTTrainer(Trainer):
                         forecasted_trajectories[seq_id] = out[batch_id].cpu().numpy()
                         gt_trajectories[seq_id] = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
                         forecasted_probabilities[seq_id] = traj_prob[batch_id]
+
+        print(forecasted_trajectories)
+        print(forecasted_probabilities)
 
         # compute the metric
         if compute_metric:

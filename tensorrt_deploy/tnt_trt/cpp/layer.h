@@ -23,9 +23,11 @@ using namespace nvinfer1;
 
 static const int BATCH_SIZE = 1;
 
-static const int TNT_HORIZON           = 30;
-static const int TNT_CANDIDATE_NUM     = 900; // only surpport fixed now.
-static const int TNT_TARGET_SELECT_NUM = 50;
+static const int   TNT_HORIZON            = 30;
+static const int   TNT_CANDIDATE_NUM      = 900; // only surpport fixed now.
+static const int   TNT_TARGET_SELECT_NUM  = 50;
+static const int   TNT_FINAL_OUT_TRAJ_NUM = 6;
+static const float TNT_PSEUDO_NMS_THRESH  = 4.0f;
 
 static const int   INPUT_CHANNEL               = 6;
 static const int   SUB_GRAPH_HIDDEN_CHANNEL    = 64;

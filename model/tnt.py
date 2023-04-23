@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-18 14:33:38
+LastEditTime: 2023-04-23 16:03:02
 FilePath: /my_vectornet_github/model/tnt.py
 LastEditors: zhanghao
 Description: 
@@ -124,7 +124,7 @@ class TNT(nn.Module):
         for global_feat, target_candidate in zip(batch_global_feat, batch_candidates):
             target_feat = global_feat[:, 0]
 
-            print("target_feat: \n", target_feat)
+            # print("target_feat: \n", target_feat)
 
             # 2. target prob offset generate.
             target_prob, offset = self.target_pred_layer(target_feat, target_candidate)
@@ -140,8 +140,8 @@ class TNT(nn.Module):
             # 5. caculate traj scores.
             score = self.traj_score_layer(target_feat, trajs)
 
-            print("trajs: \n", trajs)
-            print("score: \n", score)
+            # print("trajs: \n", trajs)
+            # print("score: \n", score)
 
             traj_final_k, traj_final_k_prob = self.traj_selection(trajs, score)
             traj_final_k_prob = traj_final_k_prob.view(self.k)
@@ -152,12 +152,13 @@ class TNT(nn.Module):
 
         return batch_trajs, batch_traj_probs
 
-    def traj_selection(self, traj_in, score, threshold=16):
+    def traj_selection(self, traj_in, score, threshold=4):
         score_descend, order = score.sort(descending=True)
         traj_pred = traj_in[order]
         traj_selected = traj_pred[:self.k].clone()
         traj_prob = score_descend[:6].clone()
 
+        debug_index_selected = [0]
         traj_cnt = 1
         thres = threshold
         while traj_cnt < self.k:
@@ -167,10 +168,13 @@ class TNT(nn.Module):
                     traj_selected[traj_cnt] = traj_pred[j].clone()
                     traj_prob[traj_cnt] = score_descend[j]
                     traj_cnt += 1
+                    debug_index_selected.append(j)
                 if traj_cnt >= self.k:
                     break
             else:
                 thres /= 2.0
+
+        # print("debug_index_selected: ", debug_index_selected)
 
         return traj_selected, traj_prob
 
