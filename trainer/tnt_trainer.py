@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-23 16:03:32
+LastEditTime: 2023-04-25 15:37:39
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -282,6 +282,11 @@ class TNTTrainer(Trainer):
                 else:
                     traj_prob = [1.0] * 6
 
+                for oo in out:
+                    print("\n")
+                    print(oo.reshape(-1, 60)[:, -2:])
+                print(traj_prob)
+
                 # record the prediction and ground truth
                 for batch_id in range(batch_size):
                     seq_id = data[batch_id]["seq_id"]
@@ -303,9 +308,6 @@ class TNTTrainer(Trainer):
                         forecasted_trajectories[seq_id] = out[batch_id].cpu().numpy()
                         gt_trajectories[seq_id] = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
                         forecasted_probabilities[seq_id] = traj_prob[batch_id]
-
-        print(forecasted_trajectories)
-        print(forecasted_probabilities)
 
         # compute the metric
         if compute_metric:

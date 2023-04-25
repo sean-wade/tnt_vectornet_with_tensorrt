@@ -1,7 +1,7 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-18 14:05:09
-FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/export_tnt_head_onnx.py
+LastEditTime: 2023-04-25 15:16:49
+FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/onnx/export_tnt_head_onnx.py
 LastEditors: zhanghao
 Description: 
 '''
@@ -92,6 +92,8 @@ class TNTExport(nn.Module):
         trajs = self.motion_estimator(target_feat, target_loc_se)
 
         score = self.traj_score_layer(target_feat, trajs)
+        
+        # score, order = score.sort(descending=True)
 
         return trajs, score
 
@@ -147,7 +149,7 @@ if __name__ == "__main__":
     model = load_tnt(ckpt)
     # print(model)
 
-    test_pkl = "tensorrt_deploy/vectornet_trt/src/data/data_seq_40050_features.pkl"
+    test_pkl = "tensorrt_deploy/vectornet_trt/cpp/data/data_seq_40050_features.pkl"
     test_data = pickle.load(open(test_pkl, "rb"))
     # x = test_data["x"]
     # cluster = test_data["cluster"].long()

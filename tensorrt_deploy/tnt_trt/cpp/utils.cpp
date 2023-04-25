@@ -71,32 +71,41 @@ std::map<std::string, Weights> loadWeights(const std::string file)
     return weightMap;
 }
 
-void postProcessCPU(float* traj_score, float* traj_pred, std::vector<int>& select_index)
+void postProcessCPUV2(
+    float* traj_score, float* traj_pred, std::vector<int>& select_index, std::vector<int>& score_index)
 {
     int index[TNT_TARGET_SELECT_NUM];
     thrust::sequence(thrust::host, index, index + TNT_TARGET_SELECT_NUM);
     thrust::sort_by_key(thrust::host, traj_score, traj_score + TNT_TARGET_SELECT_NUM, index, thrust::greater<float>());
 
     select_index.clear();
-
+    score_index.clear();
+    select_index.emplace_back(index[0]);
+    score_index.emplace_back(0);
     float threshold = TNT_PSEUDO_NMS_THRESH;
     while (select_index.size() < TNT_FINAL_OUT_TRAJ_NUM && threshold >= 0.5)
     {
-        for (int i = 0; i < TNT_TARGET_SELECT_NUM; i++)
+        for (int i = 1; i < TNT_TARGET_SELECT_NUM; i++)
         {
             bool near_all_select = true;
             for (auto j : select_index)
             {
                 if (i != j)
                 {
-                    float cur_dis = calculateDistance(traj_pred, i, j, TNT_HORIZON);
+                    float cur_dis = calculateDistance(traj_pred, index[i], index[j], TNT_HORIZON);
                     if (cur_dis < threshold)
                         near_all_select = false;
                 }
+                else
+                {
+                    near_all_select = false;
+                }
             }
             if (near_all_select)
-                select_index.push_back(i);
-
+            {
+                select_index.push_back(index[i]);
+                score_index.emplace_back(i);
+            }
             if (select_index.size() >= TNT_FINAL_OUT_TRAJ_NUM)
                 break;
         }
@@ -105,4 +114,15 @@ void postProcessCPU(float* traj_score, float* traj_pred, std::vector<int>& selec
         else
             threshold /= 2.0;
     }
+    for (int j = select_index.size(); j < TNT_FINAL_OUT_TRAJ_NUM; j++)
+    {
+        select_index.emplace_back(index[j]);
+        score_index.emplace_back(j);
+    }
+
+    for (auto k : select_index)
+    {
+        printf("%d, ", k);
+    }
+    printf("\n");
 }

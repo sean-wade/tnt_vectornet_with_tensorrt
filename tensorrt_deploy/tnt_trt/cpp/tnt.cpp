@@ -136,13 +136,14 @@ bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTrajs& pred_data)
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     std::vector<int> select_index;
-    postProcessCPU(traj_score, traj_pred, select_index);
+    std::vector<int> score_index;
+    postProcessCPUV2(traj_score, traj_pred, select_index, score_index);
 
-    for (auto k : select_index)
+    for (int k = 0; k < select_index.size(); k++)
     {
         TrajData traj_data;
-        traj_data.score = traj_score[k];
-        memcpy(traj_data.pred_traj, traj_pred + k * TNT_HORIZON * 2, sizeof(float) * TNT_HORIZON * 2);
+        traj_data.score = traj_score[score_index[k]];
+        memcpy(traj_data.pred_traj, traj_pred + select_index[k] * TNT_HORIZON * 2, sizeof(float) * TNT_HORIZON * 2);
         pred_data.pred_trajs.emplace_back(traj_data);
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -275,10 +276,9 @@ bool TNT::createTNTEngine()
     profile->setDimensions("id_embedding", OptProfileSelector::kMIN, Dims4(1, 2, 1, 1));
     profile->setDimensions("id_embedding", OptProfileSelector::kOPT, Dims4(32, 2, 1, 1));
     profile->setDimensions("id_embedding", OptProfileSelector::kMAX, Dims4(256, 2, 1, 1));
-    profile->setDimensions("cluster_count", OptProfileSelector::kMAX, Dims4(256, 1, 1, 1));
 
     profile->setDimensions("candidate", OptProfileSelector::kMIN, Dims4(1, 2, 1, 1));
-    profile->setDimensions("candidate", OptProfileSelector::kOPT, Dims4(900, 2, 1, 1));
+    profile->setDimensions("candidate", OptProfileSelector::kOPT, Dims4(TNT_CANDIDATE_NUM, 2, 1, 1));
     profile->setDimensions("candidate", OptProfileSelector::kMAX, Dims4(1024, 2, 1, 1));
     config->addOptimizationProfile(profile);
 

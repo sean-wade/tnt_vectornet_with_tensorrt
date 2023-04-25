@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-18 14:06:55
+LastEditTime: 2023-04-25 14:13:57
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -61,7 +61,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/medium", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/medium2", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-23 16:03:02
+LastEditTime: 2023-04-25 15:26:23
 FilePath: /my_vectornet_github/model/tnt.py
 LastEditors: zhanghao
 Description: 
@@ -145,7 +145,7 @@ class TNT(nn.Module):
 
             traj_final_k, traj_final_k_prob = self.traj_selection(trajs, score)
             traj_final_k_prob = traj_final_k_prob.view(self.k)
-            traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
+            # traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
 
             batch_trajs.append(traj_final_k.view(self.k, self.horizon, 2))
             batch_traj_probs.append(traj_final_k_prob)
@@ -174,7 +174,7 @@ class TNT(nn.Module):
             else:
                 thres /= 2.0
 
-        # print("debug_index_selected: ", debug_index_selected)
+        print("\ndebug_index_selected: ", debug_index_selected)
 
         return traj_selected, traj_prob
 

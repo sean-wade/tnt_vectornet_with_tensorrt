@@ -442,6 +442,9 @@ static ILayer* TrajScoreLayer(
     ISoftMaxLayer* traj_score = network->addSoftMax(*traj_score_fc->getOutput(0));
     traj_score->setAxes(1 << 0);
 
+    // ITopKLayer* traj_score_topk =
+    //     network->addTopK(*traj_score->getOutput(0), TopKOperation::kMAX, target_select_num, 0X01);
+
     return traj_score;
 }
 

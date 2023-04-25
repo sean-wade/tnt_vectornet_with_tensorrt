@@ -11,17 +11,14 @@
 int main()
 {
     TNTOptions options;
-    options.engine_path =
-        "/home/zhanghao/code/master/10_PREDICTION/VectorNet/my_vectornet_github/tensorrt_deploy/tnt_trt/tnt.engine";
-    options.weights_path =
-        // "/home/zhanghao/code/master/10_PREDICTION/VectorNet/my_vectornet_github/tensorrt_deploy/vectornet_trt/cpp/data/vectornet.wts";
-        "/home/zhanghao/code/master/10_PREDICTION/VectorNet/my_vectornet_github/tensorrt_deploy/tnt_trt/tnt.wts";
-    options.ues_fp16 = false;
+    options.engine_path  = "../tnt.engine";
+    options.weights_path = "../tnt.wts";
+    options.ues_fp16     = false;
 
     TrajfeatureInputData input_data;
     input_data.feats_num     = 109;
     input_data.cluster_num   = 7;
-    input_data.candidate_num = 900;
+    input_data.candidate_num = TNT_CANDIDATE_NUM;
 
     float feature[INPUT_CHANNEL * input_data.feats_num] = {
         7.436824589967727661e-02,  -1.142864322662353516e+01, 3.525845706462860107e-03,  6.032838821411132812e-01,
@@ -386,7 +383,7 @@ int main()
     pred_data.print();
 
     // For timing, because first time is slow, doesnot count.
-    int  loop_time = 1000;
+    int  loop_time = 1;
     auto start     = std::chrono::system_clock::now();
     for (int k = 0; k < loop_time; k++)
     {

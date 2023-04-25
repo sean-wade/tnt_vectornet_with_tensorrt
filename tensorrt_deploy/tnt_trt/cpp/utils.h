@@ -1,7 +1,7 @@
 /*
  * @Author: zhanghao
- * @LastEditTime: 2023-04-23 15:51:50
- * @FilePath: /cpp/utils.h
+ * @LastEditTime: 2023-04-25 15:22:15
+ * @FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/cpp/utils.h
  * @LastEditors: zhanghao
  * @Description:
  */
@@ -26,4 +26,6 @@ std::map<std::string, Weights> loadWeights(const std::string file);
 
 float calculateDistance(float* traj_data, int idx1, int idx2, int horizon = 30);
 
-void postProcessCPU(float* traj_score, float* traj_pred, std::vector<int>& select_index);
+// void postProcessCPU(float* traj_score, float* traj_pred, std::vector<int>& select_index);
+void postProcessCPUV2(
+    float* traj_score, float* traj_pred, std::vector<int>& select_index, std::vector<int>& score_index);

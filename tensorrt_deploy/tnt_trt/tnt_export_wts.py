@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-23 14:44:51
+LastEditTime: 2023-04-25 14:03:06
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -163,9 +163,10 @@ if __name__ == "__main__":
     cluster = test_data["cluster"].long()
     id_embedding = test_data["identifier"]
     target_candidate = test_data['candidate']
+    # print(target_candidate.shape)
 
-    # import numpy as np
-    # np.savetxt("candidate.txt", target_candidate.flatten().reshape(1,-1).numpy(), fmt="%.1f", delimiter=",")
+    import numpy as np
+    np.savetxt("candidate.txt", target_candidate.flatten().reshape(1,-1).numpy(), fmt="%.1f", delimiter=",")
 
     model.cuda()
     with torch.no_grad():
@@ -178,8 +179,8 @@ if __name__ == "__main__":
         # print(scores[:2])
         # print(scores.shape)
 
-        for ss, tj in zip(scores[:3], trajs[:3]):
-            print(float(ss), ": ", tj)
+        # for ss, tj in zip(scores, trajs):
+        #     print(float(ss), ": ", tj)
 
     save_weights(model, wts)
 
