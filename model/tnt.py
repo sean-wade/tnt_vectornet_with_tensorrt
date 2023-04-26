@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-25 15:26:23
+LastEditTime: 2023-04-26 19:04:18
 FilePath: /my_vectornet_github/model/tnt.py
 LastEditors: zhanghao
 Description: 
@@ -174,7 +174,7 @@ class TNT(nn.Module):
             else:
                 thres /= 2.0
 
-        print("\ndebug_index_selected: ", debug_index_selected)
+        # print("\ndebug_index_selected: ", debug_index_selected)
 
         return traj_selected, traj_prob
 

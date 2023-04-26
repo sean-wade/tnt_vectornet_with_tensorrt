@@ -295,7 +295,7 @@ class Trainer(object):
         assert self.testset, "[Trainer]: No test dataset, metrics can't be computed!"
 
         forecasted_trajectories, gt_trajectories = {}, {}
-        seq_id = 0
+        data_id = 0
 
         # k = self.model.k if not self.multi_gpu else self.model.module.k
         # horizon = self.model.horizon if not self.multi_gpu else self.model.module.horizon
@@ -321,9 +321,9 @@ class Trainer(object):
 
                 # record the prediction and ground truth
                 for batch_id in range(batch_size):
-                    forecasted_trajectories[seq_id] = out[batch_id].cpu().numpy()
-                    gt_trajectories[seq_id] = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
-                    seq_id += 1
+                    forecasted_trajectories[data_id] = out[batch_id].cpu().numpy()
+                    gt_trajectories[data_id] = data[batch_id]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy()
+                    data_id += 1
 
             metric_results = get_displacement_errors_and_miss_rate(
                 forecasted_trajectories,

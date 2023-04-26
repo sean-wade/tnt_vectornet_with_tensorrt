@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-25 15:37:39
+LastEditTime: 2023-04-26 19:13:03
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -282,10 +282,10 @@ class TNTTrainer(Trainer):
                 else:
                     traj_prob = [1.0] * 6
 
-                for oo in out:
-                    print("\n")
-                    print(oo.reshape(-1, 60)[:, -2:])
-                print(traj_prob)
+                # for oo in out:
+                #     print("\n")
+                #     print(oo.reshape(-1, 60)[:, -2:])
+                # print(traj_prob)
 
                 # record the prediction and ground truth
                 for batch_id in range(batch_size):

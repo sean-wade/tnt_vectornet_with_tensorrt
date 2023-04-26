@@ -1,9 +1,14 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 18:51:28
-FilePath: /my_vectornet_github/dataset/sg_preprocess.py
+LastEditTime: 2023-04-26 19:17:02
+FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
+
+*************************************************************************************************
+**** 注意: sg_preprocess.py 仅生成自车为 target-agent 的训练数据，该文件会针对所有 agent 生成训练数据 ****
+*************************************************************************************************
+
     根据SG数据保存的 data_seq_{id}.pkl 数据进行转换，生成训练使用的 data_seq_{id}_features.pkl
     转换前的 pickle 格式如下:
         {
@@ -18,9 +23,8 @@ Description:
             # "tl"      : [ 5 * 2]
         }
     转换后的 pickle keys 详见 assets/SGPreprocessor.png
-
-
 '''
+import enum
 import os
 import sys
 PROJ_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../..")
@@ -31,10 +35,8 @@ import torch
 import pickle
 import argparse
 import numpy as np
-# import pandas as pd
+from copy import copy
 from tqdm import tqdm
-from copy import deepcopy, copy
-from os.path import join as pjoin
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from dataset.util.cubic_spline import Spline2D
@@ -43,7 +45,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class SGPreprocessor:
+class SGPreprocessorAllAgent:
     def __init__(self,
             root_dir,
             save_dir=None,
@@ -70,7 +72,7 @@ class SGPreprocessor:
         self.viz = viz
 
         self.file_paths = glob.glob(root_dir+"/*.pkl")
-        print("SGPreprocessor file nums = ", len(self.file_paths))
+        print("SGPreprocessorAllAgent file nums = ", len(self.file_paths))
         os.makedirs(self.save_dir, exist_ok=True)
 
 
@@ -82,18 +84,26 @@ class SGPreprocessor:
 
 
     def process_and_save(self, f_path, seq_id):
-        data = self.read_sg_data(f_path)
-        data = self.get_obj_feats(data)
+        # print(f_path)
+        data_pkl = self.read_sg_data(f_path)
 
-        data['graph'] = self.get_lane_graph(data)
-        data['seq_id'] = seq_id.split("_")[-1]
-        # visualization for debug purpose
-        if self.viz:
-            self.visualize_data(data)
+        valid_train_datas = self.reorganize_data(data_pkl)
 
-        f_path = self.save_dir + "/%s_features.pkl"%seq_id
-        train_data = self.transform_for_training(data)
-        self.save(train_data, f_path)
+        for ii, data in enumerate(valid_train_datas):
+            data = self.get_obj_feats(data)
+
+            data['graph'] = self.get_lane_graph(data)
+            # data['seq_id'] = seq_id.split("_")[-1]
+            # visualization for debug purpose
+            if self.viz:
+                self.visualize_data(data)
+
+            f_name = "/%s_ego0.pkl"%seq_id if ii == 0 else "/%s_agent%d.pkl"%(seq_id, ii)
+            data['seq_id'] = f_name
+            f_path = self.save_dir + f_name
+            train_data = self.transform_for_training(data)
+            self.save(train_data, f_path)
+
         return []
 
 
@@ -165,7 +175,43 @@ class SGPreprocessor:
 
         return train_data
 
+    def reorganize_data(self, orig_data):
+        valid_idxs = []
+        for i, steps in enumerate(orig_data['steps']):
+            if i==0:
+                valid_idxs.append(i)
+            else:
+                is_full_obs = len(steps) == self.obs_horizon + self.pred_horizon
+                is_valid_type = orig_data['trajs'][i][0][2] <= 7
+                move_dist = np.linalg.norm(orig_data['trajs'][i][0][3:5] - orig_data['trajs'][i][-1][3:5], ord=2)
+                is_moving = move_dist > 5.0
+                if is_full_obs and is_valid_type and is_moving:
+                    valid_idxs.append(i)
+        
+        # print(valid_idxs)
+        valid_datas = []
+        for idx in valid_idxs:
+            data_dict = {
+                "lane_raw" : orig_data["lane_raw"],
+                "tl_raw" : orig_data["tl_raw"],
+            }
 
+            agt_traj = orig_data['trajs'][idx]
+            agt_step = orig_data['steps'][idx]
+
+            ctx_trajs, ctx_steps = [], []
+            for ii in range(len(orig_data['steps'])):
+                if ii != idx:
+                    ctx_trajs.append(orig_data['trajs'][ii])
+                    ctx_steps.append(orig_data['steps'][ii])
+
+            data_dict["trajs"] = [agt_traj] + ctx_trajs
+            data_dict["steps"] = [agt_step] + ctx_steps
+            valid_datas.append(data_dict)
+
+        return valid_datas
+        
+    
     @staticmethod
     def read_sg_data(pkl_path):
         pkl_data = pickle.load(open(pkl_path, "rb"))
@@ -484,7 +530,13 @@ if __name__ == "__main__":
     print("root_dir : ", args.root)
     print("save_dir : ", args.dest)
 
-    argoverse_processor = SGPreprocessor(root_dir=args.root, split="train", save_dir=args.dest, viz=args.viz)
+    argoverse_processor = SGPreprocessorAllAgent(root_dir=args.root, 
+                                                 split="train", 
+                                                 save_dir=args.dest, 
+                                                 viz=args.viz,
+                                                 sample_range=50,
+                                                 sample_resolution=5
+                                                 )
     loader = DataLoader(argoverse_processor,
                         batch_size=1,
                         num_workers=0,
