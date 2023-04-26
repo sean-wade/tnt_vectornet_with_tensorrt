@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 19:22:48
+LastEditTime: 2023-04-26 19:27:41
 FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
@@ -98,7 +98,7 @@ class SGPreprocessorAllAgent:
             if self.viz:
                 self.visualize_data(data)
 
-            f_name = "%s_ego0"%seq_id if ii == 0 else "/%s_agent%d"%(seq_id, ii)
+            f_name = "%s_ego0"%seq_id if ii == 0 else "%s_agent%d"%(seq_id, ii)
             data['seq_id'] = f_name
             f_path = self.save_dir + "/%s.pkl"%f_name
             train_data = self.transform_for_training(data)
