@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 19:13:03
+LastEditTime: 2023-04-27 09:57:03
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -339,7 +339,7 @@ class TNTTrainer(Trainer):
         if plot:
             from dataset.sg_dataloader import collate_list
             os.makedirs(self.save_folder + "/fig", exist_ok=True)
-            vis = Visualizer(convert_coordinate=convert_coordinate)
+            vis = Visualizer(convert_coordinate=convert_coordinate, candidate=True)
             self.plot_loader = self.loader(self.testset, batch_size=1, num_workers=2, collate_fn=collate_list)
             for data in tqdm(self.plot_loader, desc="Ploting and saving..."):
                 seq_id = data[0]["seq_id"]

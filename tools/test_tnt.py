@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 19:11:41
+LastEditTime: 2023-04-27 09:57:30
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -52,7 +52,7 @@ def test(args):
 
     trainer.test(miss_threshold=2.0, 
                 save_pred=args.save_pred, 
-                convert_coordinate=False,
+                convert_coordinate=True,
                 compute_metric=True,
                 plot=not args.noplot
                 )

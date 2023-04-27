@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 19:27:41
+LastEditTime: 2023-04-27 10:19:09
 FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
@@ -57,7 +57,8 @@ class SGPreprocessorAllAgent:
             normalized=True,
             sample_range=60,
             sample_resolution=4,
-            viz=False
+            viz=False,
+            prefix=""
         ):
         self.root_dir = root_dir
         self.save_dir = save_dir
@@ -70,6 +71,7 @@ class SGPreprocessorAllAgent:
         self.sample_range = sample_range
         self.sample_resolution = sample_resolution
         self.viz = viz
+        self.prefix = prefix
 
         self.file_paths = glob.glob(root_dir+"/*.pkl")
         print("SGPreprocessorAllAgent file nums = ", len(self.file_paths))
@@ -100,7 +102,7 @@ class SGPreprocessorAllAgent:
 
             f_name = "%s_ego0"%seq_id if ii == 0 else "%s_agent%d"%(seq_id, ii)
             data['seq_id'] = f_name
-            f_path = self.save_dir + "/%s.pkl"%f_name
+            f_path = self.save_dir + "/%s%s.pkl"%(self.prefix, f_name)
             train_data = self.transform_for_training(data)
             self.save(train_data, f_path)
 
@@ -178,14 +180,14 @@ class SGPreprocessorAllAgent:
     def reorganize_data(self, orig_data):
         valid_idxs = []
         for i, steps in enumerate(orig_data['steps']):
-            if i==0:
+            if i == 0:
                 valid_idxs.append(i)
             else:
                 is_full_obs = len(steps) == self.obs_horizon + self.pred_horizon
                 is_valid_type = orig_data['trajs'][i][0][2] <= 7
-                move_dist = np.linalg.norm(orig_data['trajs'][i][0][3:5] - orig_data['trajs'][i][-1][3:5], ord=2)
-                is_moving = move_dist > 5.0
-                if is_full_obs and is_valid_type and is_moving:
+                is_moving = np.linalg.norm(orig_data['trajs'][i][0][3:5] - orig_data['trajs'][i][-1][3:5], ord=2) > 5.0
+                is_near_ego = np.linalg.norm(orig_data['trajs'][i][0][3:5] - orig_data['trajs'][0][-1][3:5], ord=2) < 10.0
+                if is_full_obs and is_valid_type and (is_moving or is_near_ego):
                     valid_idxs.append(i)
         
         # print(valid_idxs)
@@ -519,6 +521,28 @@ class SGPreprocessorAllAgent:
         plt.show()
 
 
+def process_with_folders(folders, save_dir, args):
+    for i, folder in enumerate(folders):
+        argoverse_processor = SGPreprocessorAllAgent(folder, 
+                                                 split="train", 
+                                                 save_dir=save_dir, 
+                                                 viz=args.viz,
+                                                 sample_range=50,
+                                                 sample_resolution=5,
+                                                 prefix="dd%d_"%i
+                                                 )
+        loader = DataLoader(argoverse_processor,
+                        batch_size=1,
+                        num_workers=0,
+                        shuffle=False,
+                        pin_memory=False,
+                        drop_last=False)
+
+        for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving %s "%folder)):
+            if args.small and i >= 50:
+                break
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--root", type=str, default="/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data/")
@@ -527,23 +551,34 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--viz",   action='store_true', default=False)
     args = parser.parse_args()
 
-    print("root_dir : ", args.root)
-    print("save_dir : ", args.dest)
+    # print("root_dir : ", args.root)
+    # print("save_dir : ", args.dest)
 
-    argoverse_processor = SGPreprocessorAllAgent(root_dir=args.root, 
-                                                 split="train", 
-                                                 save_dir=args.dest, 
-                                                 viz=args.viz,
-                                                 sample_range=50,
-                                                 sample_resolution=5
-                                                 )
-    loader = DataLoader(argoverse_processor,
-                        batch_size=1,
-                        num_workers=0,
-                        shuffle=False,
-                        pin_memory=False,
-                        drop_last=False)
+    # argoverse_processor = SGPreprocessorAllAgent(root_dir=args.root, 
+    #                                              split="train", 
+    #                                              save_dir=args.dest, 
+    #                                              viz=args.viz,
+    #                                              sample_range=50,
+    #                                              sample_resolution=5
+    #                                              )
+    # loader = DataLoader(argoverse_processor,
+    #                     batch_size=1,
+    #                     num_workers=0,
+    #                     shuffle=False,
+    #                     pin_memory=False,
+    #                     drop_last=False)
 
-    for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving features ")):
-        if args.small and i >= 50:
-            break
+    # for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving features ")):
+    #     if args.small and i >= 50:
+    #         break
+
+    folders = [
+        "/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-20_17-29-37_10_tj/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_16-28-36_2_tj/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_17-08-28_4_tj/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_14-35-03_3_tj/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_15-35-10_6_tj_2023-03-02-18-28-20/traj_data",
+        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_16-32-13_9_tj_2023-03-02-19-08-12/traj_data",
+    ]
+    process_with_folders(folders, "/mnt/data/SGTrain/rosbag/all_agent_medium/", args)
