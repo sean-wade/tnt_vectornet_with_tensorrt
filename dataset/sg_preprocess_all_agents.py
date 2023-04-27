@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 10:19:09
+LastEditTime: 2023-04-27 15:50:39
 FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
@@ -539,8 +539,7 @@ def process_with_folders(folders, save_dir, args):
                         drop_last=False)
 
         for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving %s "%folder)):
-            if args.small and i >= 50:
-                break
+            pass
 
 
 if __name__ == "__main__":
