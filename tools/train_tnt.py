@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-26 19:03:06
+LastEditTime: 2023-04-27 11:08:52
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -71,7 +71,7 @@ def train(n_gpu, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", required=False, type=str, default="/mnt/data/SGTrain/rosbag/all_agent_test/",
+    parser.add_argument("-d", "--data_root", required=False, type=str, default="/mnt/data/SGTrain/rosbag/all_agent_medium/",
                         help="root dir for datasets")
     parser.add_argument("-o", "--output_dir", required=False, type=str, default="work_dir/tnt/",
                         help="dir to save checkpoint and model")

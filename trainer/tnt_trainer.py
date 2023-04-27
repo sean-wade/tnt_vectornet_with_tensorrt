@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 09:57:03
+LastEditTime: 2023-04-27 14:53:43
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -152,7 +152,7 @@ class TNTTrainer(Trainer):
         #     total=len(dataloader),
         #     bar_format="{l_bar}{r_bar}"
         # )
-        learning_rate = self.lr
+        # learning_rate = self.lr
         # for i, data in data_iter:
         for i, data in enumerate(dataloader):
             n_graph = len(data)
@@ -204,15 +204,15 @@ class TNTTrainer(Trainer):
                     loss_dict["traj_loss"].detach().item() / n_graph,
                     loss_dict["score_loss"].detach().item() / n_graph,
                     loss_dict["aux_loss"].detach().item() / n_graph,
-                    learning_rate
+                    self.lr
                 )
                 # data_iter.set_description(desc=desc_str, refresh=True)
                 logger.info(desc_str)
 
         if training:
             if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
-                learning_rate = self.optm_schedule.step_and_update_lr()
-                self.write_log("LR", learning_rate, epoch)
+                self.lr = self.optm_schedule.step_and_update_lr()
+                self.write_log("LR", self.lr, epoch)
         else:    # add by zhanghao.
             cur_loss = avg_loss / num_sample
             if not self.min_eval_loss:
