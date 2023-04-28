@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 11:08:52
+LastEditTime: 2023-04-28 16:29:30
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -12,27 +12,34 @@ import argparse
 from loguru import logger
 from datetime import datetime
 from trainer.tnt_trainer import TNTTrainer
+from trainer.utils.logger import setup_logger
 from dataset.sg_dataloader import SGTrajDataset, collate_list
 
 @logger.catch
 def train(n_gpu, args):
-    logger.info("Start training tnt...")
-    logger.info("Configs: {}".format(args))
-    train_set = SGTrajDataset(args.data_root + "/train/", in_mem=args.on_memory)
-    val_set = SGTrajDataset(args.data_root + "/val/", in_mem=args.on_memory)
-
     # init output dir
     time_stamp = datetime.now().strftime("%m_%d_%H_%M")
     output_dir = os.path.join(args.output_dir, time_stamp)
     if not args.multi_gpu or (args.multi_gpu and n_gpu == 0):
         if os.path.exists(output_dir) and len(os.listdir(output_dir)) > 0:
-            raise Exception("The output folder does exists and is not empty! Check the folder.")
+            raise Exception("The output folder does exists and is not empty! Check the folder:%s"%output_dir)
         else:
             os.makedirs(output_dir)
+        # # dump the args
+        # with open(os.path.join(output_dir, 'conf.json'), 'w') as fp:
+        #     json.dump(vars(args), fp, indent=4, separators=(", ", ": "))
+    
+    setup_logger(
+            output_dir,
+            distributed_rank=0,
+            filename="train_log.txt",
+            mode="a",
+        )
 
-            # # dump the args
-            # with open(os.path.join(output_dir, 'conf.json'), 'w') as fp:
-            #     json.dump(vars(args), fp, indent=4, separators=(", ", ": "))
+    logger.info("Start training tnt...")
+    logger.info("Configs: {}".format(args))
+    train_set = SGTrajDataset(args.data_root + "/train/", in_mem=args.on_memory)
+    val_set = SGTrajDataset(args.data_root + "/val/", in_mem=args.on_memory)
 
     # init trainer
     trainer = TNTTrainer(
@@ -71,7 +78,7 @@ def train(n_gpu, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", required=False, type=str, default="/mnt/data/SGTrain/rosbag/all_agent_medium/",
+    parser.add_argument("-d", "--data_root", required=False, type=str, default="/home/jovyan/workspace/DATA/TRAJ_ALL_AGENTS_0427/",
                         help="root dir for datasets")
     parser.add_argument("-o", "--output_dir", required=False, type=str, default="work_dir/tnt/",
                         help="dir to save checkpoint and model")
@@ -81,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--aux_loss", action="store_true", default=True,
                         help="Training with the auxiliary recovery loss")
 
-    parser.add_argument("-b", "--batch_size", type=int, default=128,
+    parser.add_argument("-b", "--batch_size", type=int, default=1280,
                         help="number of batch_size")
     parser.add_argument("-e", "--n_epoch", type=int, default=500,
                         help="number of epochs")
@@ -99,7 +106,7 @@ if __name__ == "__main__":
                         help="printing loss every n iter: setting n")
     parser.add_argument("--on_memory", type=bool, default=True, help="Loading on memory: true or false")
 
-    parser.add_argument("--lr", type=float, default=0.01, help="learning rate of adam")
+    parser.add_argument("--lr", type=float, default=0.05, help="learning rate of adam")
     parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
                         help="the number of warmup epoch with initial learning rate, after the learning rate decays")
     parser.add_argument("-luf", "--lr_update_freq", type=int, default=50,

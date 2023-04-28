@@ -145,7 +145,7 @@ class TNT(nn.Module):
 
             traj_final_k, traj_final_k_prob = self.traj_selection(trajs, score)
             traj_final_k_prob = traj_final_k_prob.view(self.k)
-            traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
+            # traj_final_k_prob = traj_final_k_prob / traj_final_k_prob.sum()
 
             batch_trajs.append(traj_final_k.view(self.k, self.horizon, 2))
             batch_traj_probs.append(traj_final_k_prob)

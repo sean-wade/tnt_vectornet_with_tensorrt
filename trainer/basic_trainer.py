@@ -3,7 +3,7 @@ import gc
 import json
 from tqdm import tqdm
 from loguru import logger
-from trainer.utils.logger import setup_logger
+# from trainer.utils.logger import setup_logger
 
 import torch
 import torch.distributed as dist
@@ -72,12 +72,12 @@ class Trainer(object):
         if not self.multi_gpu or (self.multi_gpu and self.cuda_id == 1):
             self.logger = SummaryWriter(log_dir=os.path.join(self.save_folder, "log"))
         self.log_freq = log_freq
-        setup_logger(
-            self.save_folder,
-            distributed_rank=0,
-            filename="train_log.txt",
-            mode="a",
-        )
+        # setup_logger(
+        #     self.save_folder,
+        #     distributed_rank=0,
+        #     filename="train_log.txt",
+        #     mode="a",
+        # )
         self.verbose = verbose
         
         # dataset

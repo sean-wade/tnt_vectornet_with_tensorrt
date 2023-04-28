@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 15:45:51
+LastEditTime: 2023-04-28 16:31:26
 FilePath: /my_vectornet_github/model/loss/loss.py
 LastEditors: zhanghao
 Description: 
@@ -65,7 +65,7 @@ class VectorLoss(nn.Module):
         loss += l_traj
         if self.aux_loss:
             # return nll loss if pred is None
-            if not isinstance(aux_pred, torch.Tensor) or not isinstance(aux_gt, torch.Tensor):
+            if not isinstance(aux_pred, torch.Tensor) or not isinstance(aux_gt, torch.Tensor) or len(aux_gt)==0:
                 return loss
             assert aux_pred.size() == aux_gt.size(), "[VectorLoss]: The dim of prediction and ground truth don't match!"
 

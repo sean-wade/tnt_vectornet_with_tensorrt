@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 14:53:43
+LastEditTime: 2023-04-27 19:43:39
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -284,7 +284,7 @@ class TNTTrainer(Trainer):
 
                 # for oo in out:
                 #     print("\n")
-                #     print(oo.reshape(-1, 60)[:, -2:])
+                #     print(oo.reshape(-1, 60))
                 # print(traj_prob)
 
                 # record the prediction and ground truth

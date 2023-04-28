@@ -56,7 +56,7 @@ class VectorNetBackbone(nn.Module):
             sub_graph_out = self.subgraph(batch_data["x"], batch_data["cluster"].long())
             # print("sub_graph_out: \n", sub_graph_out)
 
-            if self.training and self.with_aux:
+            if self.training and self.with_aux and valid_len>1:
                 mask_polyline_indices = torch.randint(1, valid_len, (1,))
                 aux_gt = sub_graph_out[mask_polyline_indices]
                 sub_graph_out[mask_polyline_indices] = 0.0

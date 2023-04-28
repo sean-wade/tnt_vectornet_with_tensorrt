@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 09:57:30
+LastEditTime: 2023-04-28 10:05:02
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -12,14 +12,23 @@ import argparse
 from loguru import logger
 from datetime import datetime
 from trainer.tnt_trainer import TNTTrainer
+from trainer.utils.logger import setup_logger
 from dataset.sg_dataloader import SGTrajDataset, collate_list
 
 
 def test(args):
-    logger.info("Start testing tnt...")
-    logger.info("Configs: {}".format(args))
     time_stamp = datetime.now().strftime("%m_%d_%H_%M")
     args.save_dir = os.path.join(args.save_dir, time_stamp) + "_tnt"
+
+    setup_logger(
+            args.save_dir,
+            distributed_rank=0,
+            filename="train_log.txt",
+            mode="a",
+        )
+    logger.info("Start testing tnt...")
+    logger.info("Configs: {}".format(args))
+    
     os.makedirs(args.save_dir, exist_ok=True)
     if args.save_pred:
         os.makedirs(args.save_dir + "/fig", exist_ok=True)
@@ -61,7 +70,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/all_agent_test", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/all_agent_medium/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")

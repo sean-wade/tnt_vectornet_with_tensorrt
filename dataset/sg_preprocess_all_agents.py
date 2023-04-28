@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 15:50:39
+LastEditTime: 2023-04-28 11:36:50
 FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
@@ -190,7 +190,7 @@ class SGPreprocessorAllAgent:
                 if is_full_obs and is_valid_type and (is_moving or is_near_ego):
                     valid_idxs.append(i)
         
-        # print(valid_idxs)
+        print(valid_idxs)
         valid_datas = []
         for idx in valid_idxs:
             data_dict = {
@@ -572,12 +572,13 @@ if __name__ == "__main__":
     #         break
 
     folders = [
-        "/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-20_17-29-37_10_tj/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_16-28-36_2_tj/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_17-08-28_4_tj/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_14-35-03_3_tj/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_15-35-10_6_tj_2023-03-02-18-28-20/traj_data",
-        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_16-32-13_9_tj_2023-03-02-19-08-12/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-20_17-29-37_10_tj/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_16-28-36_2_tj/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag2/MKZ-A3QV50_2023-02-27_17-08-28_4_tj/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_14-35-03_3_tj/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_15-35-10_6_tj_2023-03-02-18-28-20/traj_data",
+        # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_16-32-13_9_tj_2023-03-02-19-08-12/traj_data",
+        "/mnt/data/SGTrain/rosbag/ttttt/traj_data"
     ]
-    process_with_folders(folders, "/mnt/data/SGTrain/rosbag/all_agent_medium/", args)
+    process_with_folders(folders, "/mnt/data/SGTrain/rosbag/ttttt/feats/", args)
