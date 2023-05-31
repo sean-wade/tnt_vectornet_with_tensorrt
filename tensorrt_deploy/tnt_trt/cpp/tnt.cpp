@@ -54,6 +54,8 @@ bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTrajs& pred_data)
 {
     void* buffers[6];
 
+    printf("num = [%d,%d,%d]\n", input_data.feats_num, input_data.cluster_num, input_data.candidate_num);
+
     const int inputIndex1 = m_engine_->getBindingIndex("feats");
     const int inputIndex2 = m_engine_->getBindingIndex("cluster");
     const int inputIndex3 = m_engine_->getBindingIndex("cluster_count");
@@ -131,6 +133,7 @@ bool TNT::Process(TrajfeatureInputData& input_data, TNTPredictTrajs& pred_data)
     cudaFree(buffers[inputIndex2]);
     cudaFree(buffers[inputIndex3]);
     cudaFree(buffers[inputIndex4]);
+    cudaFree(buffers[inputIndex5]);
     cudaFree(buffers[outputIndex1]);
     cudaFree(buffers[outputIndex2]);
 

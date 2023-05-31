@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 10:53:16
+LastEditTime: 2023-05-05 17:35:28
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -69,9 +69,11 @@ class SGTrajDataset(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = SGTrajDataset(data_root = '/mnt/data/SGTrain/rosbag/medium/train/', in_mem=True)
+    # torch.manual_seed(0)
     
-    loader = DataLoader(dataset=dataset, batch_size=2, shuffle=False, collate_fn=collate_list)
+    dataset = SGTrajDataset(data_root = '/mnt/data/SGTrain/rosbag/all_agent_medium/val/', in_mem=True)
+    
+    loader = DataLoader(dataset=dataset, batch_size=2, shuffle=True, collate_fn=collate_list)
 
     for data in loader:
         print(data[0]["seq_id"], data[1]["seq_id"])

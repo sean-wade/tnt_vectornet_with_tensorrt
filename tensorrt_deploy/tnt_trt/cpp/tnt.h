@@ -1,6 +1,6 @@
 /*
  * @Author: zhanghao
- * @LastEditTime: 2023-04-18 15:49:44
+ * @LastEditTime: 2023-05-25 12:06:28
  * @FilePath: /cpp/tnt.h
  * @LastEditors: zhanghao
  * @Description:
@@ -25,7 +25,7 @@ struct TNTPredictTrajs
     {
         for (int i = 0; i < pred_trajs.size(); i++)
         {
-            printf("%f: ", pred_trajs[i].score);
+            printf("score = [%f]: \n", pred_trajs[i].score);
             for (int j = 0; j < TNT_HORIZON * 2; j++)
             {
                 printf("%f, ", pred_trajs[i].pred_traj[j]);

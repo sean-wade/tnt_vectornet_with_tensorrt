@@ -25,8 +25,8 @@ message("CUDNN_LIBRARY: ${CUDNN_LIBRARY}")
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/Plugin
-    ${PROJECT_SOURCE_DIR}/Plugin/layerNormPlugin
-    ${PROJECT_SOURCE_DIR}/Plugin/scatterMaxPlugin
+    # ${PROJECT_SOURCE_DIR}/Plugin/layerNormPlugin
+    # ${PROJECT_SOURCE_DIR}/Plugin/scatterMaxPlugin
     ${CUDA_INCLUDE_DIRS}
 )
 

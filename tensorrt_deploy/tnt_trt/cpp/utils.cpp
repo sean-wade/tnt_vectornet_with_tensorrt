@@ -120,9 +120,9 @@ void postProcessCPUV2(
         score_index.emplace_back(j);
     }
 
-    for (auto k : select_index)
-    {
-        printf("%d, ", k);
-    }
-    printf("\n");
+    // for (auto k : select_index)
+    // {
+    //     printf("%d, ", k);
+    // }
+    // printf("\n");
 }

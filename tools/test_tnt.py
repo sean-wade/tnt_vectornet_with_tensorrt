@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-28 10:05:02
+LastEditTime: 2023-05-29 15:01:23
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/all_agent_medium/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
-    parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
+    parser.add_argument("-b", "--batch_size", type=int, default=1, help="number of batch_size")
     parser.add_argument("-w", "--num_workers", type=int, default=4, help="dataloader worker size")
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True, help="training with CUDA: true, or false")
     parser.add_argument("-cd", "--cuda_device", type=int, default=0, help="CUDA device ids")
@@ -82,7 +82,7 @@ if __name__ == "__main__":
                         # default="checkpoint_iter26.ckpt",
                         help="resume a checkpoint for fine-tune")
     parser.add_argument("-rm", "--resume_model", type=str,
-                        default="weights/sg_best_TNT.pth",
+                        default="weights/sg_best_TNT_0529.pth",
                         help="resume a model state for fine-tune")
 
     parser.add_argument("-sd", "--save_dir", type=str, default="work_dir/test/"),

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-25 14:03:06
+LastEditTime: 2023-05-29 14:32:18
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -151,13 +151,14 @@ if __name__ == "__main__":
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     
-    ckpt = "weights/sg_best_TNT.pth"
-    wts = "tensorrt_deploy/tnt_trt/tnt.wts"
+    ckpt = "weights/sg_best_TNT_0529.pth"
+    wts = "tensorrt_deploy/tnt_trt/tnt_0529_c400.wts"
 
     model = load_tnt(ckpt)
     # print(model)
 
-    test_pkl = "tensorrt_deploy/vectornet_trt/cpp/data/data_seq_40050_features.pkl"
+    # test_pkl = "tensorrt_deploy/vectornet_trt/cpp/data/data_seq_40050_features.pkl"
+    test_pkl = "/mnt/data/SGTrain/rosbag/all_agent_medium/val/dd3_data_seq_10072_agent1.pkl"
     test_data = pickle.load(open(test_pkl, "rb"))
     x = test_data["x"]
     cluster = test_data["cluster"].long()
