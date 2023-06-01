@@ -61,7 +61,7 @@ def test(args):
 
     trainer.test(miss_threshold=2.0, 
                 save_pred=args.save_pred, 
-                convert_coordinate=True,
+                convert_coordinate=False,
                 compute_metric=True,
                 plot=not args.noplot
                 )
