@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-14 10:26:32
+LastEditTime: 2023-06-01 17:06:28
 FilePath: /my_vectornet_github/dataset/util/vis_utils_v2.py
 LastEditors: zhanghao
 Description: 
@@ -20,8 +20,9 @@ class Visualizer():
         self.convert_coordinate = convert_coordinate
 
 
-    def draw_once(self, data, preds, gts=None, probs=None):
+    def draw_once(self, data, preds=[], gts=None, probs=None):
         _, ax = plt.subplots(figsize=(12, 12))
+        plt.grid(alpha = 0.2)
         ax.axis('equal')
         # plt.axis('off')
         ax.set_title('seq_id: {}'.format(data["seq_id"]))
@@ -50,19 +51,20 @@ class Visualizer():
             cur_lane = np.matmul(np.linalg.inv(rot), cur_lane.T).T + orig.reshape(-1, 2)
             ax.plot(cur_lane[:, 0], cur_lane[:, 1], marker='.', alpha=0.5, color="grey")
 
-        # gts 
-        ax.plot(
-            gts[:, 0], 
-            gts[:, 1], 
-            linestyle=':', 
-            linewidth=3,
-            marker = '^', 
-            markersize=5, 
-            label="ego-gt", 
-            c="coral", 
-            alpha=0.9
-        )
-        ax.plot(gts[-1, 0], gts[-1, 1], marker='o', color='coral', markersize=15, alpha=0.4, zorder=5, label="gt-final")
+        # gts
+        if gts is not None: 
+            ax.plot(
+                gts[:, 0], 
+                gts[:, 1], 
+                linestyle=':', 
+                linewidth=3,
+                marker = '^', 
+                markersize=5, 
+                label="ego-gt", 
+                c="coral", 
+                alpha=0.9
+            )
+            ax.plot(gts[-1, 0], gts[-1, 1], marker='o', color='coral', markersize=15, alpha=0.4, zorder=5, label="gt-final")
 
         # pred
         for pp, pred in enumerate(preds):
