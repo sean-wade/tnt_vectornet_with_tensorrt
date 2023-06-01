@@ -1,12 +1,12 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-05-29 15:01:23
+LastEditTime: 2023-04-28 10:05:02
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
 '''
 import os
-import sys
+import glob
 import json
 import argparse
 from loguru import logger
@@ -36,10 +36,13 @@ def test(args):
     # print(str(vars(args)))
     # with open(args.save_dir + "/result.txt", "a") as fff:
     #     fff.write(str(vars(args)) + "\n\n")
-
+    
+    test_path_list = glob.glob(args.data_root + "/*/" + args.split)
+    print(test_path_list)
+    
     # data loading
     try:
-        test_set = SGTrajDataset(os.path.join(args.data_root, args.split), in_mem=args.on_memory)
+        test_set = SGTrajDataset(test_path_list, in_mem=args.on_memory)
     except:
         raise Exception("Failed to load the data, please check the dataset!")
 
@@ -61,7 +64,7 @@ def test(args):
 
     trainer.test(miss_threshold=2.0, 
                 save_pred=args.save_pred, 
-                convert_coordinate=False,
+                convert_coordinate=True,
                 compute_metric=True,
                 plot=not args.noplot
                 )
@@ -70,10 +73,10 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/all_agent_medium/", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/home/jovyan/workspace/DATA/TRAJ_ALL_AGENTS_0427/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
-    parser.add_argument("-b", "--batch_size", type=int, default=1, help="number of batch_size")
+    parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
     parser.add_argument("-w", "--num_workers", type=int, default=4, help="dataloader worker size")
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True, help="training with CUDA: true, or false")
     parser.add_argument("-cd", "--cuda_device", type=int, default=0, help="CUDA device ids")
@@ -82,7 +85,7 @@ if __name__ == "__main__":
                         # default="checkpoint_iter26.ckpt",
                         help="resume a checkpoint for fine-tune")
     parser.add_argument("-rm", "--resume_model", type=str,
-                        default="weights/sg_best_TNT_0529.pth",
+                        default="weights/sg_best_TNT.pth",
                         help="resume a model state for fine-tune")
 
     parser.add_argument("-sd", "--save_dir", type=str, default="work_dir/test/"),

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-05-05 17:35:28
+LastEditTime: 2023-04-13 10:53:16
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -40,11 +40,13 @@ def collate_list_cuda(samples, device=torch.device('cuda:0')):
 
 class SGTrajDataset(Dataset):
     def __init__(self,
-                data_root,
+                data_roots,
                 in_mem = True):
-        self.data_root = data_root
+        self.data_roots = data_roots
         self.in_mem = in_mem
-        self.data_paths = sorted(glob.glob(data_root + "/*.pkl"))
+        self.data_paths = []
+        for data_root in data_roots: 
+            self.data_paths = self.data_paths + sorted(glob.glob(data_root + "/*.pkl"))
         self.num_features = 6
         
         if self.in_mem:
@@ -69,11 +71,11 @@ class SGTrajDataset(Dataset):
 
 
 if __name__ == '__main__':
-    # torch.manual_seed(0)
+    dataset = SGTrajDataset(data_roots = ['/home/jovyan/workspace/DATA/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/train/',
+                                          '/home/jovyan/workspace/DATA/TRAJ_DATASET/TRAJ_ALL_AGENTS_0427/train/'], in_mem=True)
     
-    dataset = SGTrajDataset(data_root = '/mnt/data/SGTrain/rosbag/all_agent_medium/val/', in_mem=True)
+    loader = DataLoader(dataset=dataset, batch_size=2, shuffle=False, collate_fn=collate_list)
     
-    loader = DataLoader(dataset=dataset, batch_size=2, shuffle=True, collate_fn=collate_list)
-
-    for data in loader:
-        print(data[0]["seq_id"], data[1]["seq_id"])
+    print(len(loader))
+    # for data in loader:
+    #     print(data[0]["seq_id"], data[1]["seq_id"])

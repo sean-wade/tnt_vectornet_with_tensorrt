@@ -56,19 +56,25 @@ class VectorNetBackbone(nn.Module):
             sub_graph_out = self.subgraph(batch_data["x"], batch_data["cluster"].long())
             # print("sub_graph_out: \n", sub_graph_out)
 
-            if self.training and self.with_aux and valid_len>1:
-                mask_polyline_indices = torch.randint(1, valid_len, (1,))
-                aux_gt = sub_graph_out[mask_polyline_indices]
-                sub_graph_out[mask_polyline_indices] = 0.0
-                batch_aux_gt.append(aux_gt)
+            if self.training and self.with_aux:
+                if valid_len>1:
+                    mask_polyline_indices = torch.randint(1, valid_len, (1,))
+                    aux_gt = sub_graph_out[mask_polyline_indices]
+                    sub_graph_out[mask_polyline_indices] = 0.0
+                    batch_aux_gt.append(aux_gt)
+                else:
+                    batch_aux_gt.append(torch.tensor([0.0]).to(self.device))
 
             x = torch.cat([sub_graph_out, id_embedding], dim=1).unsqueeze(0)
             global_graph_out = self.global_graph(x, valid_lens=None)
 
             if self.training and self.with_aux:
-                aux_in = global_graph_out.view(-1, self.global_graph_width)[mask_polyline_indices].to(self.device)
-                aux_out = self.aux_mlp(aux_in)
-                batch_aux_out.append(aux_out)
+                if valid_len>1:
+                    aux_in = global_graph_out.view(-1, self.global_graph_width)[mask_polyline_indices].to(self.device)
+                    aux_out = self.aux_mlp(aux_in)
+                    batch_aux_out.append(aux_out)
+                else:
+                    batch_aux_out.append(torch.tensor([0.0]).to(self.device))
 
             batch_output.append(global_graph_out)
 

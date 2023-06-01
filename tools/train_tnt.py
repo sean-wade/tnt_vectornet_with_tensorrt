@@ -1,12 +1,12 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-28 16:29:30
+LastEditTime: 2023-04-28 10:01:34
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
 '''
 import os
-import sys
+import glob
 import json
 import argparse
 from loguru import logger
@@ -38,8 +38,12 @@ def train(n_gpu, args):
 
     logger.info("Start training tnt...")
     logger.info("Configs: {}".format(args))
-    train_set = SGTrajDataset(args.data_root + "/train/", in_mem=args.on_memory)
-    val_set = SGTrajDataset(args.data_root + "/val/", in_mem=args.on_memory)
+    
+    train_path_list = glob.glob(args.data_root + "/*/train")
+    val_path_list = glob.glob(args.data_root + "/*/val")
+    
+    train_set = SGTrajDataset(train_path_list, in_mem=args.on_memory)
+    val_set = SGTrajDataset(val_path_list, in_mem=args.on_memory)
 
     # init trainer
     trainer = TNTTrainer(
@@ -78,19 +82,19 @@ def train(n_gpu, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", required=False, type=str, default="/home/jovyan/workspace/DATA/TRAJ_ALL_AGENTS_0427/",
+    parser.add_argument("-d", "--data_root", required=False, type=str, default="/home/jovyan/workspace/DATA/TRAJ_DATASET/",
                         help="root dir for datasets")
     parser.add_argument("-o", "--output_dir", required=False, type=str, default="work_dir/tnt/",
                         help="dir to save checkpoint and model")
 
     parser.add_argument("-l", "--num_glayer", type=int, default=1,
                         help="number of global graph layers")
-    parser.add_argument("-a", "--aux_loss", action="store_true", default=True,
+    parser.add_argument("-a", "--aux_loss", action="store_true", default=False,
                         help="Training with the auxiliary recovery loss")
 
-    parser.add_argument("-b", "--batch_size", type=int, default=1280,
+    parser.add_argument("-b", "--batch_size", type=int, default=10240,
                         help="number of batch_size")
-    parser.add_argument("-e", "--n_epoch", type=int, default=500,
+    parser.add_argument("-e", "--n_epoch", type=int, default=200,
                         help="number of epochs")
     parser.add_argument("-w", "--num_workers", type=int, default=0,
                         help="dataloader worker size")
@@ -104,12 +108,12 @@ if __name__ == "__main__":
 
     parser.add_argument("--log_freq", type=int, default=5,
                         help="printing loss every n iter: setting n")
-    parser.add_argument("--on_memory", type=bool, default=True, help="Loading on memory: true or false")
+    parser.add_argument("-om", "--on_memory", type=bool, default=False, help="Loading on memory: true or false")
 
     parser.add_argument("--lr", type=float, default=0.05, help="learning rate of adam")
     parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
                         help="the number of warmup epoch with initial learning rate, after the learning rate decays")
-    parser.add_argument("-luf", "--lr_update_freq", type=int, default=50,
+    parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,
                         help="learning rate decay frequency for lr scheduler")
     parser.add_argument("-ldr", "--lr_decay_rate", type=float, default=0.8, help="lr scheduler decay rate")
 

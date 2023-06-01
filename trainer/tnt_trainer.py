@@ -180,8 +180,9 @@ class TNTTrainer(Trainer):
                                 loss_dict["traj_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
                     self.write_log("Loss/Score_Loss",
                                 loss_dict["score_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
-                    self.write_log("Loss/Aux_Loss",
-                                loss_dict["aux_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
+                    if self.aux_loss:
+                        self.write_log("Loss/Aux_Loss",
+                                    loss_dict["aux_loss"].detach().item() / n_graph, i + epoch * len(dataloader))
             else:
                 with torch.no_grad():
                     loss, loss_dict = self.compute_loss(data)
@@ -203,7 +204,7 @@ class TNTTrainer(Trainer):
                     loss_dict["tar_offset_loss"].detach().item() / n_graph,
                     loss_dict["traj_loss"].detach().item() / n_graph,
                     loss_dict["score_loss"].detach().item() / n_graph,
-                    loss_dict["aux_loss"].detach().item() / n_graph,
+                    loss_dict["aux_loss"].detach().item() / n_graph if self.aux_loss else 0.0,
                     self.lr
                 )
                 # data_iter.set_description(desc=desc_str, refresh=True)

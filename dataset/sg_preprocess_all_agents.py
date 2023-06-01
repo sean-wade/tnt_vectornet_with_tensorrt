@@ -190,7 +190,7 @@ class SGPreprocessorAllAgent:
                 if is_full_obs and is_valid_type and (is_moving or is_near_ego):
                     valid_idxs.append(i)
         
-        print(valid_idxs)
+        # print(valid_idxs)
         valid_datas = []
         for idx in valid_idxs:
             data_dict = {
@@ -529,7 +529,8 @@ def process_with_folders(folders, save_dir, args):
                                                  viz=args.viz,
                                                  sample_range=50,
                                                  sample_resolution=5,
-                                                 prefix="dd%d_"%i
+                                                 prefix="dd%d_"%i,
+                                                 normalized = args.normalized
                                                  )
         loader = DataLoader(argoverse_processor,
                         batch_size=1,
