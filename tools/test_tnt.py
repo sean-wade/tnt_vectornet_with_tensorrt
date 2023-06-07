@@ -37,7 +37,7 @@ def test(args):
     # with open(args.save_dir + "/result.txt", "a") as fff:
     #     fff.write(str(vars(args)) + "\n\n")
     
-    test_path_list = glob.glob(args.data_root + "/*/" + args.split)
+    test_path_list = glob.glob(args.data_root + "/*" + args.split)
     print(test_path_list)
     
     # data loading
@@ -73,7 +73,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/home/jovyan/workspace/DATA/TRAJ_ALL_AGENTS_0427/", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/0427_0516_BALANCE/CurStaStr_111/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")

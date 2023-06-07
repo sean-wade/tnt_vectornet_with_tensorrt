@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-13 10:53:16
+LastEditTime: 2023-06-01 18:02:15
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -49,6 +49,7 @@ class SGTrajDataset(Dataset):
             self.data_paths = self.data_paths + sorted(glob.glob(data_root + "/*.pkl"))
         self.num_features = 6
         
+        assert len(self.data_paths) > 0, "Error, No file found under : %s"%(data_roots)
         if self.in_mem:
             self.data = [self.extract_data(idx) for idx in tqdm(range(len(self)), desc="Loading data in memory")]
 
@@ -68,6 +69,12 @@ class SGTrajDataset(Dataset):
         with open(self.data_paths[idx], "rb") as ppp:
             raw_data = pickle.load(ppp)
             return raw_data
+
+        # raw_data = {}
+        # with open(self.data_paths[idx], "rb") as ppp:
+        #     raw_data = pickle.load(ppp)
+        #     ppp.close()
+        # return raw_data
 
 
 if __name__ == '__main__':

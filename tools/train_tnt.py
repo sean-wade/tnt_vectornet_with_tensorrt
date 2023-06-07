@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-28 10:01:34
+LastEditTime: 2023-06-01 18:01:43
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -39,8 +39,8 @@ def train(n_gpu, args):
     logger.info("Start training tnt...")
     logger.info("Configs: {}".format(args))
     
-    train_path_list = glob.glob(args.data_root + "/*/train")
-    val_path_list = glob.glob(args.data_root + "/*/val")
+    train_path_list = glob.glob(args.data_root + "/*train")
+    val_path_list = glob.glob(args.data_root + "/*val")
     
     train_set = SGTrajDataset(train_path_list, in_mem=args.on_memory)
     val_set = SGTrajDataset(val_path_list, in_mem=args.on_memory)
@@ -82,7 +82,7 @@ def train(n_gpu, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", required=False, type=str, default="/home/jovyan/workspace/DATA/TRAJ_DATASET/",
+    parser.add_argument("-d", "--data_root", required=False, type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/0427_0516_BALANCE/CurStaStr_111",
                         help="root dir for datasets")
     parser.add_argument("-o", "--output_dir", required=False, type=str, default="work_dir/tnt/",
                         help="dir to save checkpoint and model")
@@ -92,10 +92,12 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--aux_loss", action="store_true", default=False,
                         help="Training with the auxiliary recovery loss")
 
-    parser.add_argument("-b", "--batch_size", type=int, default=10240,
+    parser.add_argument("-b", "--batch_size", type=int, default=1024,
                         help="number of batch_size")
+
     parser.add_argument("-e", "--n_epoch", type=int, default=200,
                         help="number of epochs")
+
     parser.add_argument("-w", "--num_workers", type=int, default=0,
                         help="dataloader worker size")
 
@@ -108,9 +110,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--log_freq", type=int, default=5,
                         help="printing loss every n iter: setting n")
-    parser.add_argument("-om", "--on_memory", type=bool, default=False, help="Loading on memory: true or false")
+                        
+    parser.add_argument("-om", "--on_memory", type=bool, default=True, help="Loading on memory: true or false")
 
-    parser.add_argument("--lr", type=float, default=0.05, help="learning rate of adam")
+    parser.add_argument("--lr", type=float, default=0.02, help="learning rate of adam")
     parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
                         help="the number of warmup epoch with initial learning rate, after the learning rate decays")
     parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,

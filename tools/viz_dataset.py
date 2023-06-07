@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-01 17:44:58
+LastEditTime: 2023-06-02 17:56:16
 FilePath: /my_vectornet_github/tools/viz_dataset.py
 LastEditors: zhanghao
 Description: 
@@ -15,32 +15,15 @@ from dataset.util.vis_utils_v2 import Visualizer
 import matplotlib.pyplot as plt
 
 
-def viz(args):
-    os.makedirs(args.data_root + "viz/train/", exist_ok=True)
-    os.makedirs(args.data_root + "viz/val/", exist_ok=True)
-
-    train_path_list = glob.glob(args.data_root + "/train")
-    val_path_list = glob.glob(args.data_root + "/val")
-    print(train_path_list)
-    print(val_path_list)
-
-    train_set = SGTrajDataset(train_path_list, in_mem=False)
-    val_set = SGTrajDataset(val_path_list, in_mem=False)
+def viz(pkl_dirs, fig_save_path, inteval):
+    os.makedirs(fig_save_path, exist_ok=True)
+    dataset = SGTrajDataset(pkl_dirs, in_mem=False)
     vis = Visualizer(convert_coordinate=False, candidate=True)
-
-    # i = 0
-    # for data in tqdm(train_set, desc="Plotting trainset...."):
-    #     if i % args.inteval == 0:
-    #         vis.draw_once(data, gts=data["y"].view(-1, 2).cumsum(axis=0).cpu().numpy())
-    #         plt.savefig(args.data_root + "viz/train/" + data["seq_id"] + ".png")
-    #         plt.close()
-    #     i += 1
-
     i = 0
-    for data in tqdm(val_set, desc="Plotting valset...."):
-        if i % args.inteval == 0:
+    for data in tqdm(dataset, desc="Plotting dataset...."):
+        if i % inteval == 0:
             vis.draw_once(data, gts=data["y"].view(-1, 2).cumsum(axis=0).cpu().numpy())
-            plt.savefig(args.data_root + "viz/val/" + data["seq_id"] + ".png")
+            plt.savefig(fig_save_path + "/" + data["seq_id"] + ".png")
             plt.close()
         i += 1
 
@@ -48,8 +31,17 @@ def viz(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/", help="root dir for datasets")
-    parser.add_argument("-i", "--inteval", type=int, default=10, help="every inteval save once.")
+    parser.add_argument("-d", "--data_root", type=str, 
+                            default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/train", 
+                            help="root dir for datasets")
+
+    parser.add_argument("-s", "--save_root", type=str, 
+                            default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/viz/train", 
+                            help="root dir for datasets")
+
+    parser.add_argument("-i", "--inteval", type=int, default=1, help="every inteval save once.")
+
     args = parser.parse_args()
 
-    viz(args)
+    pkl_list = [args.data_root]
+    viz(pkl_list, args.save_root, args.inteval)

@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-05-29 14:32:18
+LastEditTime: 2023-06-07 11:34:16
 FilePath: /my_vectornet_github/tensorrt_deploy/tnt_trt/tnt_export_wts.py
 LastEditors: zhanghao
 Description: 
@@ -151,8 +151,8 @@ if __name__ == "__main__":
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     
-    ckpt = "weights/sg_best_TNT_0529.pth"
-    wts = "tensorrt_deploy/tnt_trt/tnt_0529_c400.wts"
+    ckpt = "work_dir/tnt/exp2_balance/06_06_10_46/best_TNT.pth"
+    wts = "tensorrt_deploy/tnt_trt/tnt_0606exp2_balance.wts"
 
     model = load_tnt(ckpt)
     # print(model)
