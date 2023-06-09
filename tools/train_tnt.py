@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-09 11:40:19
+LastEditTime: 2023-06-09 17:47:44
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -42,8 +42,8 @@ def train(n_gpu, args):
     train_path_list = glob.glob(args.data_root + "/*train")
     val_path_list = glob.glob(args.data_root + "/*val")
     
-    train_set = SGTrajDataset(train_path_list, in_mem=args.on_memory)
-    val_set = SGTrajDataset(val_path_list, in_mem=args.on_memory)
+    train_set = SGTrajDataset(train_path_list, in_mem=args.on_memory, num_features=args.num_features)
+    val_set = SGTrajDataset(val_path_list, in_mem=args.on_memory, num_features=args.num_features)
 
     # init trainer
     trainer = TNTTrainer(
@@ -82,25 +82,40 @@ def train(n_gpu, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", required=False, type=str, default="/mnt/data/SGTrain/rosbag/bag3/Test/feats_heading_diamond_dim10",
+    parser.add_argument("-d", "--data_root", required=False, type=str, default="/home/jovyan/zhdata/TRAJ/EXP8_Heading_Diamond_DIM10_BALANCE/",
                         help="root dir for datasets")
     parser.add_argument("-o", "--output_dir", required=False, type=str, default="work_dir/tnt/",
                         help="dir to save checkpoint and model")
-
+    parser.add_argument("--log_freq", type=int, default=5,
+                        help="printing loss every n iter: setting n")
+    
+    
+    parser.add_argument("-b", "--batch_size", type=int, default=4096,
+                        help="number of batch_size")
+    parser.add_argument("-e", "--n_epoch", type=int, default=200,
+                        help="number of epochs")
+    
+    
+    parser.add_argument("--lr", type=float, default=0.04, help="learning rate of adam")
+    parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
+                        help="the number of warmup epoch with initial learning rate, after the learning rate decays")
+    parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,
+                        help="learning rate decay frequency for lr scheduler")
+    parser.add_argument("-ldr", "--lr_decay_rate", type=float, default=0.8, help="lr scheduler decay rate")
+    
+    
+    parser.add_argument("-nf", "--num_features", type=int, default=10)       
     parser.add_argument("-l", "--num_glayer", type=int, default=1,
                         help="number of global graph layers")
     parser.add_argument("-a", "--aux_loss", action="store_true", default=False,
                         help="Training with the auxiliary recovery loss")
-
-    parser.add_argument("-b", "--batch_size", type=int, default=1024,
-                        help="number of batch_size")
-
-    parser.add_argument("-e", "--n_epoch", type=int, default=200,
-                        help="number of epochs")
-
+    
+    
+    parser.add_argument("-om", "--on_memory", type=bool, default=True, help="Loading on memory: true or false")
     parser.add_argument("-w", "--num_workers", type=int, default=0,
                         help="dataloader worker size")
-
+    
+    
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True,
                         help="training with CUDA: true, or false")
     parser.add_argument("-m", "--multi_gpu", action="store_true", default=False,
@@ -108,24 +123,15 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--local_rank", default=0, type=int,
                         help="the default id of gpu")
 
-    parser.add_argument("--log_freq", type=int, default=5,
-                        help="printing loss every n iter: setting n")
-                        
-    parser.add_argument("-om", "--on_memory", type=bool, default=True, help="Loading on memory: true or false")
-
-    parser.add_argument("--lr", type=float, default=0.02, help="learning rate of adam")
-    parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
-                        help="the number of warmup epoch with initial learning rate, after the learning rate decays")
-    parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,
-                        help="learning rate decay frequency for lr scheduler")
-    parser.add_argument("-ldr", "--lr_decay_rate", type=float, default=0.8, help="lr scheduler decay rate")
-
+    
     parser.add_argument("--adam_weight_decay", type=float, default=0.01, help="weight_decay of adam")
     parser.add_argument("--adam_beta1", type=float, default=0.9, help="adam first beta value")
     parser.add_argument("--adam_beta2", type=float, default=0.999, help="adam first beta value")
 
+    
     parser.add_argument("-rc", "--resume_checkpoint", type=str, help="resume a checkpoint for fine-tune")
     parser.add_argument("-rm", "--resume_model", type=str, help="resume a model state for fine-tune")
 
+    
     args = parser.parse_args()
     train(args.local_rank, args)

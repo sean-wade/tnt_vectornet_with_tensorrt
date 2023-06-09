@@ -73,7 +73,7 @@ def test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/0427_0516_BALANCE/CurStaStr_111/", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/rosbag/bag3/Test/feats_heading_diamond_dim10/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")

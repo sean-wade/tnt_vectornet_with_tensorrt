@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-09 11:41:24
+LastEditTime: 2023-06-09 17:42:35
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -41,13 +41,14 @@ def collate_list_cuda(samples, device=torch.device('cuda:0')):
 class SGTrajDataset(Dataset):
     def __init__(self,
                 data_roots,
+                num_features = 6,
                 in_mem = True):
         self.data_roots = data_roots
         self.in_mem = in_mem
         self.data_paths = []
         for data_root in data_roots: 
             self.data_paths = self.data_paths + sorted(glob.glob(data_root + "/*.pkl"))
-        self.num_features = 10
+        self.num_features = num_features
         
         assert len(self.data_paths) > 0, "Error, No file found under : %s"%(data_roots)
         if self.in_mem:
