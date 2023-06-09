@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-02 17:56:16
+LastEditTime: 2023-06-09 10:04:50
 FilePath: /my_vectornet_github/tools/viz_dataset.py
 LastEditors: zhanghao
 Description: 
@@ -32,11 +32,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-d", "--data_root", type=str, 
-                            default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/train", 
+                            default="/mnt/data/SGTrain/rosbag/bag3/Test/feats_heading_diamond_dim10", 
                             help="root dir for datasets")
 
     parser.add_argument("-s", "--save_root", type=str, 
-                            default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/viz/train", 
+                            default="/mnt/data/SGTrain/rosbag/bag3/Test/feats_heading_diamond_dim10_fig", 
                             help="root dir for datasets")
 
     parser.add_argument("-i", "--inteval", type=int, default=1, help="every inteval save once.")

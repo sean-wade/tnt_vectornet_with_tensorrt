@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-28 11:36:50
+LastEditTime: 2023-06-09 10:25:29
 FilePath: /my_vectornet_github/dataset/sg_preprocess_all_agents.py
 LastEditors: zhanghao
 Description: 
@@ -24,7 +24,6 @@ Description:
         }
     转换后的 pickle keys 详见 assets/SGPreprocessor.png
 '''
-import enum
 import os
 import sys
 PROJ_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../..")
@@ -44,6 +43,14 @@ from dataset.util.cubic_spline import Spline2D
 import warnings
 warnings.filterwarnings("ignore")
 
+"""
+1. 使用 heading 代替计算的角度
+2. 使用 diamond_sample 方法
+3. Features 增加 (6维 -> 10维, 考虑添加速度 -> 12 维)
+"""
+
+CURVE_THRESH = 2.0
+STATIC_THRESH = 3.0
 
 class SGPreprocessorAllAgent:
     def __init__(self,
@@ -77,6 +84,8 @@ class SGPreprocessorAllAgent:
         print("SGPreprocessorAllAgent file nums = ", len(self.file_paths))
         os.makedirs(self.save_dir, exist_ok=True)
 
+        self.candidates = self.diamond_candidate_sampling(resolution=self.sample_resolution)
+
 
     def __getitem__(self, idx):
         f_path = self.file_paths[idx]
@@ -100,9 +109,10 @@ class SGPreprocessorAllAgent:
             if self.viz:
                 self.visualize_data(data)
 
-            f_name = "%s_ego0"%seq_id if ii == 0 else "%s_agent%d"%(seq_id, ii)
+            f_name = "%s_ego0"%(seq_id) if ii == 0 else "%s_agent%d"%(seq_id, ii)
+            f_name = f_name + "_" + data["moving_status"]
             data['seq_id'] = f_name
-            f_path = self.save_dir + "/%s%s.pkl"%(self.prefix, f_name)
+            f_path = self.save_dir + "%s%s.pkl"%(self.prefix, f_name)
             train_data = self.transform_for_training(data)
             self.save(train_data, f_path)
 
@@ -143,7 +153,7 @@ class SGPreprocessorAllAgent:
         train_data["y"] = torch.from_numpy(offset_fut.reshape(-1).astype(np.float32)).float()
 
         # get x
-        feats = np.empty((0, 6))
+        feats = np.empty((0, 10))
         identifier = np.empty((0, 2))
 
         traj_feats = interm_data['feats']
@@ -152,9 +162,10 @@ class SGPreprocessorAllAgent:
         traj_cnt = 0
         for _, [feat, has_obs] in enumerate(zip(traj_feats, traj_has_obss)):
             xy_s = feat[has_obs][:-1, :2]
+            other_feats = feat[has_obs][:-1, 2:]    # type, dx, dy, heading
             vec = feat[has_obs][1:, :2] - feat[has_obs][:-1, :2]
             polyline_id = np.ones((len(xy_s), 1)) * traj_cnt
-            feats = np.vstack([feats, np.hstack([xy_s, vec, step[has_obs][:-1], polyline_id])])
+            feats = np.vstack([feats, np.hstack([xy_s, vec, other_feats, step[has_obs][:-1], polyline_id])])
             traj_cnt += 1
             
         # get lane features
@@ -164,7 +175,8 @@ class SGPreprocessorAllAgent:
             vec = graph['feats']
             lane_idcs = graph['lane_idcs'].reshape(-1, 1) + traj_cnt
             steps = np.zeros((len(lane_idcs), 1))
-            feats = np.vstack([feats, np.hstack([ctrs, vec, steps, lane_idcs])])
+            padding_zeros = np.zeros((len(lane_idcs), 4))
+            feats = np.vstack([feats, np.hstack([ctrs, vec, padding_zeros, steps, lane_idcs])])
         
         cluster = copy(feats[:, -1].astype(np.int64))
         for cluster_idc in np.unique(cluster):
@@ -176,6 +188,7 @@ class SGPreprocessorAllAgent:
         train_data["identifier"] = torch.from_numpy(identifier).float()
 
         return train_data
+
 
     def reorganize_data(self, orig_data):
         valid_idxs = []
@@ -256,8 +269,9 @@ class SGPreprocessorAllAgent:
 
         # comput the rotation matrix
         if self.normalized:
-            pre = (orig - data['trajs'][0][self.obs_horizon-4][3:5]) / 2.0
-            theta = - np.arctan2(pre[1], pre[0]) + np.pi / 2
+            # pre = (orig - data['trajs'][0][self.obs_horizon-4][3:5]) / 2.0
+            # theta = - np.arctan2(pre[1], pre[0]) + np.pi / 2
+            theta = -data['trajs'][0][self.obs_horizon-4][-1] + np.pi / 2
             rot = np.asarray([
                 [np.cos(theta), -np.sin(theta)],
                 [np.sin(theta), np.cos(theta)]], np.float32)
@@ -284,7 +298,23 @@ class SGPreprocessorAllAgent:
         agt_traj_obs_rot = np.matmul(rot, (agt_traj_obs - orig.reshape(-1, 2)).T).T
         agt_traj_fut_rot = np.matmul(rot, (agt_traj_fut - orig.reshape(-1, 2)).T).T
         # use uniform sampling, range: [-60m-60m] / 30, resolution = 2m
-        tar_candts = self.uniform_candidate_sampling(sampling_range=self.sample_range, resolution=self.sample_resolution)
+        # tar_candts = self.uniform_candidate_sampling(sampling_range=self.sample_range, resolution=self.sample_resolution)
+        tar_candts = copy(self.candidates)
+
+
+        #########################################################################################################
+        # analysis traj moving status.
+        x_shift_with_orig = abs(agt_traj_fut_rot[-1, 0] - agt_traj_obs_rot[0, 0])
+        y_shift_with_orig = abs(agt_traj_fut_rot[-1, 1] - agt_traj_obs_rot[0, 1])
+        xy_dis = (x_shift_with_orig**2+y_shift_with_orig**2) ** 0.5
+        if xy_dis < STATIC_THRESH:
+            data['moving_status'] = "static"
+        elif x_shift_with_orig > CURVE_THRESH:
+            data['moving_status'] = "curve"
+        else:
+            data['moving_status'] = "straight"
+        #########################################################################################################
+
 
         if self.split == "test":
             tar_candts_gt, tar_offse_gt = np.zeros((tar_candts.shape[0], 1)), np.zeros((1, 2))
@@ -319,21 +349,28 @@ class SGPreprocessorAllAgent:
             idcs = step_obs.argsort()
             step_obs = step_obs[idcs]
             traj_obs = traj_obs[idcs]
+            traj_masked = traj[obs_mask][idcs]
             # zhanghao add: why this? if step_obs = [0,1,2...17,-,19], should we delete it?
             for i in range(len(step_obs)):
                 if step_obs[i] == self.obs_horizon - len(step_obs) + i:
                     break
             step_obs = step_obs[i:]
             traj_obs = traj_obs[i:]
+            traj_masked = traj_masked[i:]
 
             if len(step_obs) <= 1:
                 continue
 
-            feat = np.zeros((self.obs_horizon, 3), np.float32)
+            feat = np.zeros((self.obs_horizon, 6), np.float32)
             has_obs = np.zeros(self.obs_horizon, np.bool)
 
-            feat[step_obs, :2] = traj_obs
-            feat[step_obs, 2] = 1.0
+            # print(feat.shape, feat[step_obs].shape, traj_masked.shape, traj_obs.shape)
+            feat[step_obs, :2] = traj_obs                       # gx, gy
+            feat[step_obs, 2] = traj_masked[:, 2]      # type
+            feat[step_obs, 3] = traj_masked[:, 6]      # dx
+            feat[step_obs, 4] = traj_masked[:, 7]      # dy
+            feat[step_obs, 5] = traj_masked[:,-1]     # heading, 目前仅赋值最后一次观测角度
+
             has_obs[step_obs] = True
 
             if feat[-1, 0] < x_min or feat[-1, 0] > x_max or feat[-1, 1] < y_min or feat[-1, 1] > y_max:
@@ -436,6 +473,27 @@ class SGPreprocessorAllAgent:
 
 
     @staticmethod
+    def diamond_candidate_sampling(top=[0, 81], bottom=[0, -11], left=[-21, 21], right=[21, 21], resolution=5):
+        """
+        sample candidates with shape diamond polygon.
+        """
+        from shapely.geometry import Point, Polygon
+        xs = np.arange(-20, 21, resolution)
+        ys = np.arange(-10, 81, resolution)
+        xys_square = np.stack(np.meshgrid(xs, ys), -1).reshape(-1, 2)
+
+        polygon = Polygon([top, left, bottom, right])
+        candidates = []
+        for pp in xys_square:
+            point = Point(pp[0], pp[1])
+            if polygon.contains(point):
+                candidates.append(pp)
+
+        candidates = np.array(candidates)
+        return candidates
+
+
+    @staticmethod
     def get_candidate_gt(target_candidate, gt_target):
         """
         find the target candidate closest to the gt and output the one-hot ground truth
@@ -515,32 +573,41 @@ class SGPreprocessorAllAgent:
         # plt.scatter(candidate_targets[:, 0], candidate_targets[:, 1], marker="*", c="grey", alpha=0.2, s=6, zorder=15, label="sample points")
         plt.scatter(candidate_targets[tar_candts_idx, 0], candidate_targets[tar_candts_idx, 1], marker="*", c="orange", alpha=0.8, s=40, zorder=15, label="target sample")
 
+        plt.text(0, 0, data["moving_status"])
         plt.xlabel("Map X")
         plt.ylabel("Map Y")
         plt.legend()
         plt.show()
 
 
-def process_with_folders(folders, save_dir, args):
-    for i, folder in enumerate(folders):
-        argoverse_processor = SGPreprocessorAllAgent(folder, 
-                                                 split="train", 
-                                                 save_dir=save_dir, 
-                                                 viz=args.viz,
-                                                 sample_range=50,
-                                                 sample_resolution=5,
-                                                 prefix="dd%d_"%i,
-                                                 normalized = args.normalized
-                                                 )
-        loader = DataLoader(argoverse_processor,
+def process_folder(folder, save_dir, args, i):
+    argoverse_processor = SGPreprocessorAllAgent(folder, 
+                                                split="train", 
+                                                save_dir=save_dir, 
+                                                viz=args.viz,
+                                                sample_range=50,
+                                                sample_resolution=5,
+                                                prefix="dd%d_"%i,
+                                                normalized = args.normalized
+                                                )
+    loader = DataLoader(argoverse_processor,
                         batch_size=1,
                         num_workers=0,
                         shuffle=False,
                         pin_memory=False,
                         drop_last=False)
 
-        for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving %s "%folder)):
-            pass
+    for j, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving %s "%folder)):
+        pass
+
+
+def process_with_folders(folders, save_dir, args):
+    from multiprocessing import Process
+    
+    for i, folder in enumerate(folders):
+        process_folder(folder, save_dir, args, i)
+        # p = Process(target=process_folder, args=(folder, save_dir, args, i))
+        # p.start()
 
 
 if __name__ == "__main__":
@@ -549,28 +616,8 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dest", type=str, default="/mnt/data/SGTrain/rosbag/all_agent_test/")
     parser.add_argument("-s", "--small", action='store_true', default=False)
     parser.add_argument("-v", "--viz",   action='store_true', default=False)
+    parser.add_argument("-n", "--normalized",   action='store_true', default=True)
     args = parser.parse_args()
-
-    # print("root_dir : ", args.root)
-    # print("save_dir : ", args.dest)
-
-    # argoverse_processor = SGPreprocessorAllAgent(root_dir=args.root, 
-    #                                              split="train", 
-    #                                              save_dir=args.dest, 
-    #                                              viz=args.viz,
-    #                                              sample_range=50,
-    #                                              sample_resolution=5
-    #                                              )
-    # loader = DataLoader(argoverse_processor,
-    #                     batch_size=1,
-    #                     num_workers=0,
-    #                     shuffle=False,
-    #                     pin_memory=False,
-    #                     drop_last=False)
-
-    # for i, data in enumerate(tqdm(loader, total=len(argoverse_processor), desc="Generate & saving features ")):
-    #     if args.small and i >= 50:
-    #         break
 
     folders = [
         # "/mnt/data/SGTrain/rosbag/bag1/MKZ-A3QV50_2023-02-14_17-00-56_13_tj/traj_data",
@@ -580,6 +627,6 @@ if __name__ == "__main__":
         # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_14-35-03_3_tj/traj_data",
         # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_15-35-10_6_tj_2023-03-02-18-28-20/traj_data",
         # "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_16-32-13_9_tj_2023-03-02-19-08-12/traj_data",
-        "/mnt/data/SGTrain/rosbag/ttttt/traj_data"
+        "/mnt/data/SGTrain/rosbag/bag3/MKZ-A1JS30_2023-02-27_16-32-13_9_tj_2023-03-02-19-08-12/traj_data"
     ]
-    process_with_folders(folders, "/mnt/data/SGTrain/rosbag/ttttt/feats/", args)
+    process_with_folders(folders, "/mnt/data/SGTrain/rosbag/bag3/Test/feats_heading_diamond_dim10/", args)

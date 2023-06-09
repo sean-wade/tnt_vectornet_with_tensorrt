@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-01 18:02:15
+LastEditTime: 2023-06-09 11:41:24
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -47,7 +47,7 @@ class SGTrajDataset(Dataset):
         self.data_paths = []
         for data_root in data_roots: 
             self.data_paths = self.data_paths + sorted(glob.glob(data_root + "/*.pkl"))
-        self.num_features = 6
+        self.num_features = 10
         
         assert len(self.data_paths) > 0, "Error, No file found under : %s"%(data_roots)
         if self.in_mem:

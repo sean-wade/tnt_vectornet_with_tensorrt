@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-07 19:54:19
+LastEditTime: 2023-06-07 19:59:19
 FilePath: /my_vectornet_github/tools/analysis_anchor.py
 LastEditors: zhanghao
 Description: 
@@ -21,7 +21,7 @@ from sklearn.cluster import KMeans
 
 
 root = "/mnt/data/SGTrain/TRAJ_DATASET/EXP5_0427_0516_BALANCE/"
-K_ANCHORS = 100
+K_ANCHORS = 50
 
 for split in ["train", "val"]:
 # for split in ["val"]:
