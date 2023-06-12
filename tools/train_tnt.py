@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-09 17:47:44
+LastEditTime: 2023-06-12 11:43:49
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -53,7 +53,7 @@ def train(n_gpu, args):
         collate_fn=collate_list,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
-        lr=args.lr,
+        lr=args.l_rate,
         warmup_epoch=args.warmup_epoch,
         lr_decay_rate=args.lr_decay_rate,
         lr_update_freq=args.lr_update_freq,
@@ -96,7 +96,7 @@ if __name__ == "__main__":
                         help="number of epochs")
     
     
-    parser.add_argument("--lr", type=float, default=0.04, help="learning rate of adam")
+    parser.add_argument("-lr", "--l_rate", type=float, default=0.04, help="learning rate of adam")
     parser.add_argument("-we", "--warmup_epoch", type=int, default=10,
                         help="the number of warmup epoch with initial learning rate, after the learning rate decays")
     parser.add_argument("-luf", "--lr_update_freq", type=int, default=20,
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("-nf", "--num_features", type=int, default=10)       
     parser.add_argument("-l", "--num_glayer", type=int, default=1,
                         help="number of global graph layers")
-    parser.add_argument("-a", "--aux_loss", action="store_true", default=False,
+    parser.add_argument("-aux", "--aux_loss", action="store_true", default=False,
                         help="Training with the auxiliary recovery loss")
     
     
