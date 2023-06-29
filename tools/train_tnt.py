@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-29 11:01:20
+LastEditTime: 2023-06-29 14:47:17
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
                         help="dataloader worker size")
     
     
-    parser.add_argument("-aug", "--augment", action="store_true", default=True,
+    parser.add_argument("-aug", "--augment", action="store_true", default=False,
                         help="training with augment: true, or false")
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True,
                         help="training with CUDA: true, or false")
