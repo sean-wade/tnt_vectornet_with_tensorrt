@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-01 17:06:28
+LastEditTime: 2023-06-27 19:13:20
 FilePath: /my_vectornet_github/dataset/util/vis_utils_v2.py
 LastEditors: zhanghao
 Description: 
@@ -38,6 +38,12 @@ class Visualizer():
         traj_num = int(data["traj_num"])
         for i in range(traj_num):
             cur_traj = data["x"][data["cluster"] == i][:, :2]
+            if i == 0:
+                cur_traj = cur_traj[data.get('aug_mask_topx', 0):]
+                # mask_middle = data.get('mask_middle')
+                # if mask_middle is not None:
+                #     cur_traj = np.array([cur_traj[xx] for xx in range(len(cur_traj)) if xx not in mask_middle])
+
             cur_traj = np.matmul(np.linalg.inv(rot), cur_traj.T).T + orig.reshape(-1, 2)
             clr = "r" if i==0 else "gold"
             zorder = 20  if i==0 else 10

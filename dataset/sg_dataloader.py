@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-09 17:42:35
+LastEditTime: 2023-06-28 16:45:24
 FilePath: /my_vectornet_github/dataset/sg_dataloader.py
 LastEditors: zhanghao
 Description: 
@@ -15,6 +15,8 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+
+from dataset.data_augment import *
 
 
 # def collate_padding(samples):
@@ -41,8 +43,10 @@ def collate_list_cuda(samples, device=torch.device('cuda:0')):
 class SGTrajDataset(Dataset):
     def __init__(self,
                 data_roots,
-                num_features = 6,
-                in_mem = True):
+                augmentation = None,
+                num_features = 10,
+                in_mem = True,
+                ):
         self.data_roots = data_roots
         self.in_mem = in_mem
         self.data_paths = []
@@ -53,6 +57,9 @@ class SGTrajDataset(Dataset):
         assert len(self.data_paths) > 0, "Error, No file found under : %s"%(data_roots)
         if self.in_mem:
             self.data = [self.extract_data(idx) for idx in tqdm(range(len(self)), desc="Loading data in memory")]
+        
+        self.augmentation = augmentation
+        self._set_group_flag()
 
 
     def __len__(self):
@@ -61,29 +68,47 @@ class SGTrajDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.in_mem:
-            return self.data[idx]
+            data = self.data[idx]
         else:
-            return self.extract_data(idx)
+            data = self.extract_data(idx)
+        
+        if self.augmentation:
+            data = self.augmentation(data)
+
+        return data
 
 
     def extract_data(self, idx):
         with open(self.data_paths[idx], "rb") as ppp:
             raw_data = pickle.load(ppp)
+            
+            # for compare
+            if raw_data['x'].shape[1] > self.num_features:
+                raw_data['x'] = raw_data['x'][:, [0,1,2,3,8,9]]
+            
             return raw_data
 
-        # raw_data = {}
-        # with open(self.data_paths[idx], "rb") as ppp:
-        #     raw_data = pickle.load(ppp)
-        #     ppp.close()
-        # return raw_data
+            
+    def _set_group_flag(self):
+        self.flag = np.ones(len(self), dtype=np.uint8)
 
 
 if __name__ == '__main__':
-    dataset = SGTrajDataset(data_roots = ['/home/jovyan/workspace/DATA/TRAJ_DATASET/TRAJ_ALL_AGENTS_0516/train/',
-                                          '/home/jovyan/workspace/DATA/TRAJ_DATASET/TRAJ_ALL_AGENTS_0427/train/'], in_mem=True)
+    import matplotlib.pyplot as plt
+    from dataset.util.vis_utils_v2 import Visualizer
+    vis = Visualizer(convert_coordinate=False, candidate=True)
+
+    dataset = SGTrajDataset(data_roots = ['/mnt/data/SGTrain/TRAJ_DATASET/EXP8_Heading_Diamond_DIM10_BALANCE_MINI/train/'],
+                            augmentation = TrainAugmentation(),
+                            num_features = 10, 
+                            in_mem = True
+                        )
     
-    loader = DataLoader(dataset=dataset, batch_size=2, shuffle=False, collate_fn=collate_list)
+    loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, collate_fn=collate_list)
     
     print(len(loader))
-    # for data in loader:
-    #     print(data[0]["seq_id"], data[1]["seq_id"])
+    for batch_data in tqdm(loader):
+        if 1:
+            vis.draw_once(batch_data[0], gts=batch_data[0]["y"].view(-1, 2).cumsum(axis=0).cpu().numpy())
+            plt.show()
+            plt.close()

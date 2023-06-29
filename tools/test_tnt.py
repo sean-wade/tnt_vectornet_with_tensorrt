@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-12 09:57:19
+LastEditTime: 2023-06-29 11:02:12
 FilePath: /my_vectornet_github/tools/test_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -27,7 +27,7 @@ def test(args):
             mode="a",
         )
     logger.info("Start testing tnt...")
-    logger.info("Configs: {}".format(args))
+    logger.info("Configs: \n{}\n".format(args))
     
     os.makedirs(args.save_dir, exist_ok=True)
     if args.save_pred:
@@ -63,10 +63,12 @@ def test(args):
         cuda_device=args.cuda_device,
         save_folder=args.save_dir,
         ckpt_path=args.resume_checkpoint if hasattr(args, "resume_checkpoint") and args.resume_checkpoint else None,
-        model_path=args.resume_model if hasattr(args, "resume_model") and args.resume_model else None
+        model_path=args.resume_model if hasattr(args, "resume_model") and args.resume_model else None,
+        K=args.k_select,
+        M=args.m_select
     )
     
-    print("TNTTrainer init...")
+    # print("TNTTrainer init...")
     trainer.test(miss_threshold=2.0, 
                 save_pred=args.save_pred, 
                 convert_coordinate=True,
@@ -82,11 +84,13 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--split", type=str, default="val")
 
     parser.add_argument("-b", "--batch_size", type=int, default=64, help="number of batch_size")
-    parser.add_argument("-w", "--num_workers", type=int, default=0, help="dataloader worker size")
+    parser.add_argument("-w", "--num_workers", type=int, default=4, help="dataloader worker size")
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True, help="training with CUDA: true, or false")
     parser.add_argument("-cd", "--cuda_device", type=int, default=0, help="CUDA device ids")
     
-    parser.add_argument("-nf", "--num_features", type=int, default=10)       
+    parser.add_argument("-nf", "--num_features", type=int, default=10)      
+    parser.add_argument("-M", "--m_select", type=int, default=50)
+    parser.add_argument("-K", "--k_select", type=int, default=6)
     parser.add_argument("-l", "--num_glayer", type=int, default=1,
                         help="number of global graph layers")
 
@@ -100,6 +104,6 @@ if __name__ == "__main__":
     parser.add_argument("-sd", "--save_dir", type=str, default="work_dir/test/"),
     parser.add_argument("-sv", "--save_pred", action="store_true", default=True)
     parser.add_argument("-npl", "--noplot", action="store_true", default=False)
-    parser.add_argument("--on_memory", type=bool, default=True, help="Loading on memory: true or false")
+    parser.add_argument("--on_memory", type=bool, default=False, help="Loading on memory: true or false")
     args = parser.parse_args()
     test(args)

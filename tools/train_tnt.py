@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-12 11:43:49
+LastEditTime: 2023-06-29 11:01:20
 FilePath: /my_vectornet_github/tools/train_tnt.py
 LastEditors: zhanghao
 Description: 
@@ -14,6 +14,7 @@ from datetime import datetime
 from trainer.tnt_trainer import TNTTrainer
 from trainer.utils.logger import setup_logger
 from dataset.sg_dataloader import SGTrajDataset, collate_list
+from dataset.data_augment import *
 
 @logger.catch
 def train(n_gpu, args):
@@ -37,13 +38,23 @@ def train(n_gpu, args):
         )
 
     logger.info("Start training tnt...")
-    logger.info("Configs: {}".format(args))
+    logger.info("Configs: \n{}\n".format(args))
     
     train_path_list = glob.glob(args.data_root + "/*train")
     val_path_list = glob.glob(args.data_root + "/*val")
     
-    train_set = SGTrajDataset(train_path_list, in_mem=args.on_memory, num_features=args.num_features)
-    val_set = SGTrajDataset(val_path_list, in_mem=args.on_memory, num_features=args.num_features)
+    augmentation = TrainAugmentation() if args.augment else None
+    train_set = SGTrajDataset(
+        train_path_list, 
+        in_mem=args.on_memory, 
+        num_features=args.num_features, 
+        augmentation = augmentation
+    )
+    val_set = SGTrajDataset(
+        val_path_list, 
+        in_mem=args.on_memory, 
+        num_features=args.num_features
+    )
 
     # init trainer
     trainer = TNTTrainer(
@@ -67,7 +78,9 @@ def train(n_gpu, args):
         save_folder=output_dir,
         log_freq=args.log_freq,
         ckpt_path=args.resume_checkpoint if hasattr(args, "resume_checkpoint") and args.resume_checkpoint else None,
-        model_path=args.resume_model if hasattr(args, "resume_model") and args.resume_model else None
+        model_path=args.resume_model if hasattr(args, "resume_model") and args.resume_model else None,
+        K=args.k_select,
+        M=args.m_select
     )
 
     # training
@@ -104,7 +117,9 @@ if __name__ == "__main__":
     parser.add_argument("-ldr", "--lr_decay_rate", type=float, default=0.8, help="lr scheduler decay rate")
     
     
-    parser.add_argument("-nf", "--num_features", type=int, default=10)       
+    parser.add_argument("-nf", "--num_features", type=int, default=10)
+    parser.add_argument("-M", "--m_select", type=int, default=50)
+    parser.add_argument("-K", "--k_select", type=int, default=6)
     parser.add_argument("-l", "--num_glayer", type=int, default=1,
                         help="number of global graph layers")
     parser.add_argument("-aux", "--aux_loss", action="store_true", default=False,
@@ -116,6 +131,8 @@ if __name__ == "__main__":
                         help="dataloader worker size")
     
     
+    parser.add_argument("-aug", "--augment", action="store_true", default=True,
+                        help="training with augment: true, or false")
     parser.add_argument("-c", "--with_cuda", action="store_true", default=True,
                         help="training with CUDA: true, or false")
     parser.add_argument("-m", "--multi_gpu", action="store_true", default=False,

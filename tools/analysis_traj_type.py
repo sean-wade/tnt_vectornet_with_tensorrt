@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-06-07 17:23:36
+LastEditTime: 2023-06-05 17:31:42
 FilePath: /my_vectornet_github/tools/analysis_traj_type.py
 LastEditors: zhanghao
 Description: 
@@ -53,11 +53,11 @@ def analysis(args):
 
         pkl_path = glob.glob(args.data_root + "/" + args.split + "/*" + data["seq_id"] + ".pkl")[0]
         if xy_dis < STATIC_THRESH:
-            dst_path = dst_dir + "/static_" + data["seq_id"] + ".pkl"
+            dst_path = dst_dir + "/" + data["seq_id"] + "_static.pkl"
         elif x_shift_with_orig > CURVE_THRESH:
-            dst_path = dst_dir + "/curve_" + data["seq_id"] + ".pkl"
+            dst_path = dst_dir + "/" + data["seq_id"] + "_curve.pkl"
         else:
-            dst_path = dst_dir + "/straight_" + data["seq_id"] + ".pkl"
+            dst_path = dst_dir + "/" + data["seq_id"] + "_straight.pkl"
         
         shutil.copy(pkl_path, dst_path)
     
@@ -68,9 +68,9 @@ def analysis(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--data_root", type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0427/", help="root dir for datasets")
+    parser.add_argument("-d", "--data_root", type=str, default="/home/jovyan/workspace/DATA/TRAJ_DATASET/EXP6_Heading_Diamond_ALL/", help="root dir for datasets")
     parser.add_argument("-s", "--split", type=str, default="train", help="split of dataset")
-    parser.add_argument("-a", "--ana_dir", type=str, default="/mnt/data/SGTrain/TRAJ_DATASET/TRAJ_ALL_AGENTS_0427_ANA/", help="save dir for datasets")
+    parser.add_argument("-a", "--ana_dir", type=str, default="/home/jovyan/workspace/DATA/TRAJ_DATASET/EXP6_Heading_Diamond_ANA/", help="save dir for datasets")
     parser.add_argument("-v", "--viz", type=bool, default=True, help="save dir for datasets")
     parser.add_argument("-i", "--inteval", type=int, default=100, help="every inteval save once.")
     args = parser.parse_args()

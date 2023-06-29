@@ -12,6 +12,7 @@ from torch.utils.data import distributed
 from torch.utils.tensorboard import SummaryWriter
 from argoverse.evaluation.eval_forecasting import get_displacement_errors_and_miss_rate
 
+from dataset.sampler import GroupSampler
 
 class Trainer(object):
     """
@@ -123,11 +124,22 @@ class Trainer(object):
                 batch_size=self.batch_size,
                 num_workers=num_workers,
                 pin_memory=False,
-                shuffle=True,
+                sampler = GroupSampler(trainset, batch_size),
+                shuffle=False,
                 collate_fn=collate_fn
             )
-            self.eval_loader = self.loader(self.evalset, batch_size=self.batch_size, num_workers=num_workers, collate_fn=collate_fn)
-            self.test_loader = self.loader(self.testset, batch_size=self.batch_size, num_workers=num_workers, collate_fn=collate_fn)
+            self.eval_loader = self.loader(
+                self.evalset, 
+                batch_size=self.batch_size, 
+                num_workers=num_workers, 
+                collate_fn=collate_fn
+            )
+            self.test_loader = self.loader(
+                self.testset, 
+                batch_size=self.batch_size, 
+                num_workers=num_workers, 
+                collate_fn=collate_fn
+            )
 
         # model
         self.model = None
@@ -228,6 +240,8 @@ class Trainer(object):
 
         # compute the metrics and save
         metric = self.compute_metric()
+        for mk, mv in metric.items():
+            logger.info("\t%s : %.3f"%(mk, mv))
 
         # skip model saving if the minADE is not better
         if self.best_metric and isinstance(metric, dict):

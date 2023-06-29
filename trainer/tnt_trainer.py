@@ -1,6 +1,6 @@
 '''
 Author: zhanghao
-LastEditTime: 2023-04-27 19:43:39
+LastEditTime: 2023-06-28 15:31:06
 FilePath: /my_vectornet_github/trainer/tnt_trainer.py
 LastEditors: zhanghao
 Description: 
@@ -56,7 +56,9 @@ class TNTTrainer(Trainer):
                  save_folder: str = "",
                  model_path: str = None,
                  ckpt_path: str = None,
-                 verbose: bool = True
+                 verbose: bool = True,
+                 M = 50,
+                 K = 6
                  ):
         super(TNTTrainer, self).__init__(
             trainset=trainset,
@@ -92,7 +94,9 @@ class TNTTrainer(Trainer):
             self.horizon,
             num_global_graph_layer=num_global_graph_layer,
             with_aux=aux_loss,
-            device=self.device
+            device=self.device,
+            m=M,
+            k=K
         )
         self.criterion = TNTLoss(
             self.lambda1, 
@@ -237,7 +241,9 @@ class TNTTrainer(Trainer):
             # data_iter.set_description(desc=desc_str, refresh=True)
             logger.info(desc_str)
 
+        torch.cuda.empty_cache()
         return avg_loss / num_sample
+
 
     def compute_loss(self, data):
         out = self.model(data)
@@ -247,6 +253,7 @@ class TNTTrainer(Trainer):
                 "y": [dd["y"].view(self.horizon, 2).cumsum(axis=0).view(1,-1) for dd in data]
         }
         return self.criterion(out["pred"], gt, out["aux_out"], out["aux_gt"])
+
 
     def test(self,
              miss_threshold=2.0,
